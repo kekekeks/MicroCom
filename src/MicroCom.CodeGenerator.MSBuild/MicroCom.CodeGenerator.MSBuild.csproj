@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <LangVersion>8</LangVersion>
+<!--        <DoILRepack>true</DoILRepack>-->
+
+    </PropertyGroup>
+    <ItemGroup>
+        <!--<PackageReference Include="ILRepack.Lib.MSBuild" Version="2.1.17.1" />-->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.0.1" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Build.Framework" Version="15.7.179" PrivateAssets="All" />
+        <Compile Include="$(MSBuildThisFileDirectory)\..\MicroCom.CodeGenerator\**\*.cs">
+            <Link>Generator/%(RecursiveDir)%(FileName)%(Extension)</Link>
+        </Compile>
+        <Compile Remove="$(MSBuildThisFileDirectory)\..\MicroCom.CodeGenerator\bin\**\*.cs" />
+        <Compile Remove="$(MSBuildThisFileDirectory)\..\MicroCom.CodeGenerator\obj\**\*.cs" />
+        <Content Include="*.targets">
+            <Pack>true</Pack>
+            <PackagePath>build\;buildTransitive\</PackagePath>
+        </Content>
+    </ItemGroup>
+    <Target Name="PackTaskDependencies" BeforeTargets="GenerateNuspec">
+        <ItemGroup>
+            <_PackageFiles Include="$(OutDir)\**\*.dll" Exclude="$(OutDir)$(TargetFileName)">
+                <PackagePath>tools\netstandard2.0\%(RecursiveDir)</PackagePath>
+                <Visible>false</Visible>
+                <BuildAction>Content</BuildAction>
+            </_PackageFiles>
+        </ItemGroup>
+    </Target>
+<!--
+    <Target Name="ConfigureMergeAssemblies" BeforeTargets="_ResolveILRepackTargets">
+        <ItemGroup>
+            <ResourceAssembliesToDelete Include="$(OutputPath)\**\*.resources.dll" />
+            <MergePaths Include="$(OutputPath)\*.dll" />
+            <ILRepackMergeAssemblies Include="@(MergePaths -> '%(Filename)%(Extension)')" />
+            <ILRepackMergeAssemblies Remove="MicroCom.CodeGenerator.MSBuild.dll" />
+            <ILRepackMergeAssemblies Remove="System.Runtime.CompilerServices.Unsafe.dll" />
+            <ILRepackMergeAssemblies Remove="Microsoft.Build.Framework.dll" />
+        </ItemGroup>
+        <Delete Files="@(ResourceAssembliesToDelete)" />
+    </Target>
+    -->
+</Project>

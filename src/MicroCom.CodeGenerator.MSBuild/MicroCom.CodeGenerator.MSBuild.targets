@@ -1,0 +1,20 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="MicroComCodeGeneratorTask"  AssemblyFile="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll" />
+  <!-- Ensure that code generator is actually built -->
+  
+  <Target Name="GenerateMicroComItems"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="ResolveReferences"
+          Inputs="@(MicroComIdl)"
+          Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
+    <MicroComCodeGeneratorTask Inputs="@(MicroComIdl)"/>
+    <ItemGroup>
+      <!-- Remove and re-add generated file, this is needed for the clean build -->
+      <Compile Remove="%(MicroComIdl.OutputFile)"/>
+      <Compile Include="%(MicroComIdl.OutputFile)"/>
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <UpToDateCheckInput Include="@(MicroComIdl)"/>
+  </ItemGroup>
+</Project>

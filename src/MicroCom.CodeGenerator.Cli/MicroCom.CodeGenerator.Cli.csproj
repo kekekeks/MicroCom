@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <OutputType>exe</OutputType>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\MicroCom.CodeGenerator\MicroCom.CodeGenerator.csproj" />
+      <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    </ItemGroup>
+    <Target Name="Update">
+        <RemoveDir Directories="unpacked"/>
+        <Unzip DestinationFolder="unpacked" SourceFiles="../src/MicroCom.CodeGenerator.MSBuild/bin/Debug/MicroCom.CodeGenerator.MSBuild.$(Version).nupkg"/>
+    </Target>
+</Project>

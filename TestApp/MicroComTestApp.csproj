@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <TargetsPath>unpacked/build/MicroCom.CodeGenerator.MSBuild.targets</TargetsPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+    <Target Name="Unpack">
+        <RemoveDir Directories="unpacked" />
+        <Unzip DestinationFolder="unpacked" SourceFiles="../src/MicroCom.CodeGenerator.MSBuild/bin/Debug/MicroCom.CodeGenerator.MSBuild.$(Version).nupkg" />
+    </Target>
+    <Import Project="$(TargetsPath)" Condition="$(TargetsPath) != ''" />
+
+    <ItemGroup>
+       <MicroComIdl Include="avn.idl" CppHeaderPath="gen/avn.h" CSharpInteropPath="gen/avn.cs" />
+       <ProjectReference Include="../src/MicroCom.Runtime/MicroCom.Runtime.csproj" />
+    </ItemGroup>
+</Project>
