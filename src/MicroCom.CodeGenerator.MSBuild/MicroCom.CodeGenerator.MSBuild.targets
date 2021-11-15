@@ -7,7 +7,9 @@
           DependsOnTargets="ResolveReferences"
           Inputs="@(MicroComIdl)"
           Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
-    <MicroComCodeGeneratorTask Inputs="@(MicroComIdl)"/>
+    <MicroComCodeGeneratorTask
+            RuntimeNamespace="$(MicroComGeneratorRuntimeNamespace)"
+            Inputs="@(MicroComIdl)"/>
     <ItemGroup>
       <!-- Remove and re-add generated file, this is needed for the clean build -->
       <Compile Remove="%(MicroComIdl.OutputFile)"/>

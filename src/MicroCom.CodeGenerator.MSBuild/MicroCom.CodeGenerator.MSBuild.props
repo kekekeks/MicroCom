@@ -1,0 +1,5 @@
+<Project>
+    <PropertyGroup>
+        <MicroComGeneratorRuntimeNamespace Condition="$(MicroComGeneratorRuntimeNamespace) == ''">MicroCom.Runtime</MicroComGeneratorRuntimeNamespace>
+    </PropertyGroup>
+</Project>

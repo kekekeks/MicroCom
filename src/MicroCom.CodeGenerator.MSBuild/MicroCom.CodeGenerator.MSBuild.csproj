@@ -20,6 +20,10 @@
             <Pack>true</Pack>
             <PackagePath>build\;buildTransitive\</PackagePath>
         </Content>
+        <Content Include="*.props">
+            <Pack>true</Pack>
+            <PackagePath>build\;buildTransitive\</PackagePath>
+        </Content>
     </ItemGroup>
     <Target Name="PackTaskDependencies" BeforeTargets="GenerateNuspec">
         <ItemGroup>
@@ -30,17 +34,4 @@
             </_PackageFiles>
         </ItemGroup>
     </Target>
-<!--
-    <Target Name="ConfigureMergeAssemblies" BeforeTargets="_ResolveILRepackTargets">
-        <ItemGroup>
-            <ResourceAssembliesToDelete Include="$(OutputPath)\**\*.resources.dll" />
-            <MergePaths Include="$(OutputPath)\*.dll" />
-            <ILRepackMergeAssemblies Include="@(MergePaths -> '%(Filename)%(Extension)')" />
-            <ILRepackMergeAssemblies Remove="MicroCom.CodeGenerator.MSBuild.dll" />
-            <ILRepackMergeAssemblies Remove="System.Runtime.CompilerServices.Unsafe.dll" />
-            <ILRepackMergeAssemblies Remove="Microsoft.Build.Framework.dll" />
-        </ItemGroup>
-        <Delete Files="@(ResourceAssembliesToDelete)" />
-    </Target>
-    -->
 </Project>

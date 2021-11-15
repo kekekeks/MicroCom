@@ -45,6 +45,13 @@ namespace MicroCom.CodeGenerator
 
         class InterfaceReturnArg : Arg
         {
+            private readonly CSharpGen _gen;
+
+            public InterfaceReturnArg(CSharpGen gen)
+            {
+                _gen = gen;
+            }
+
             public string InterfaceType;
             public override ExpressionSyntax Value(bool isHresultReturn) => ParseExpression("&" + PName);
             public override string ManagedType => InterfaceType;
@@ -58,7 +65,7 @@ namespace MicroCom.CodeGenerator
 
             public override StatementSyntax[] ReturnMarshalResult() => new[]
             {
-                ParseStatement("return MicroCom.Runtime.MicroComRuntime.CreateProxyFor<" + InterfaceType + ">(" +
+                ParseStatement($"return {_gen.RuntimeTypeName("MicroComRuntime")}.CreateProxyFor<" + InterfaceType + ">(" +
                                PName + ", true);")
             };
 
@@ -69,34 +76,42 @@ namespace MicroCom.CodeGenerator
 
             public override ExpressionSyntax BackMarshalReturn(string resultVar)
             {
-                return ParseExpression($"MicroCom.Runtime.MicroComRuntime.GetNativePointer({resultVar}, true)");
+                return ParseExpression(
+                    _gen.RuntimeTypeName() + $".GetNativePointer({resultVar}, true)");
             }
         }
 
         class InterfaceArg : Arg
         {
+            private readonly CSharpGen _gen;
+
+            public InterfaceArg(CSharpGen gen)
+            {
+                _gen = gen;
+            }
+
             public string InterfaceType;
 
             public override ExpressionSyntax Value(bool isHresultReturn) =>
-                ParseExpression("MicroCom.Runtime.MicroComRuntime.GetNativePointer(" + Name + ")");
+                ParseExpression(_gen.RuntimeTypeName() + ".GetNativePointer(" + Name + ")");
 
             public override string ManagedType => InterfaceType;
 
             public override StatementSyntax[] ReturnMarshalResult() => new[]
             {
-                ParseStatement("return MicroCom.Runtime.MicroComRuntime.CreateProxyFor<" + InterfaceType + ">(" +
+                ParseStatement($"return {_gen.RuntimeTypeName()}.CreateProxyFor<" + InterfaceType + ">(" +
                                Name + ", true);")
             };
 
             public override ExpressionSyntax BackMarshalValue()
             {
-                return ParseExpression("MicroCom.Runtime.MicroComRuntime.CreateProxyFor<" + InterfaceType + ">(" +
+                return ParseExpression(_gen.RuntimeTypeName() + ".CreateProxyFor<" + InterfaceType + ">(" +
                                        Name + ", false)");
             }
             
             public override ExpressionSyntax BackMarshalReturn(string resultVar)
             {
-                return ParseExpression($"MicroCom.Runtime.MicroComRuntime.GetNativePointer({resultVar}, true)");
+                return ParseExpression(_gen.RuntimeTypeName() + $".GetNativePointer({resultVar}, true)");
             }
         }
 
@@ -171,12 +186,12 @@ namespace MicroCom.CodeGenerator
             if (type.PointerLevel == 2)
             {
                 if (IsInterface(type))
-                    return new InterfaceReturnArg { Name = name, InterfaceType = type.Name, NativeType = "void**" };
+                    return new InterfaceReturnArg(this) { Name = name, InterfaceType = type.Name, NativeType = "void**" };
             }
             else if (type.PointerLevel == 1)
             {
                 if (IsInterface(type))
-                    return new InterfaceArg { Name = name, InterfaceType = type.Name, NativeType = "void*" };
+                    return new InterfaceArg(this) { Name = name, InterfaceType = type.Name, NativeType = "void*" };
                 if (type.Name == "char")
                     return new StringArg { Name = name, NativeType = "byte*" };
             }
@@ -311,7 +326,7 @@ namespace MicroCom.CodeGenerator
                 arg.BackPreMarshal(backPreMarshal);
 
             backPreMarshal.Add(
-                ParseStatement($"__target = ({iface.Identifier.Text})MicroCom.Runtime.MicroComRuntime.GetObjectFromCcw(@this);"));
+                ParseStatement($"__target = ({iface.Identifier.Text}){RuntimeTypeName()}.GetObjectFromCcw(@this);"));
 
             var isBackVoidReturn = isVoidReturn || (isHresult && !isHresultLastArgumentReturn);
 
@@ -354,7 +369,7 @@ namespace MicroCom.CodeGenerator
                     CatchDeclaration(ParseTypeName("System.Exception"), Identifier("__exception__")), null,
                     Block(
                         ParseStatement(
-                            "MicroCom.Runtime.MicroComRuntime.UnhandledException(__target, __exception__);"),
+                            RuntimeTypeName() + ".UnhandledException(__target, __exception__);"),
                         isHresult ? ParseStatement("return unchecked((int)0x80004005u);")
                         : isVoidReturn ? EmptyStatement() : ParseStatement("return default;")
                     ))
@@ -417,14 +432,14 @@ namespace MicroCom.CodeGenerator
             var inheritsUnknown = iface.Inherits == null || iface.Inherits == "IUnknown";
 
             var ifaceDec = InterfaceDeclaration(iface.Name)
-                .WithBaseType(inheritsUnknown ? "MicroCom.Runtime.IUnknown" : iface.Inherits)
+                .WithBaseType(inheritsUnknown ? RuntimeTypeName("IUnknown") : iface.Inherits)
                 .AddModifiers(Token(_visibility), Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword));
 
             var proxyClassName = "__MicroCom" + iface.Name + "Proxy";
             var proxy = ClassDeclaration(proxyClassName)
                 .AddModifiers(Token(SyntaxKind.UnsafeKeyword), Token(_visibility), Token(SyntaxKind.PartialKeyword))
                 .WithBaseType(inheritsUnknown ?
-                    "MicroCom.Runtime.MicroComProxyBase" :
+                    RuntimeTypeName("MicroComProxyBase") :
                     ("__MicroCom" + iface.Inherits + "Proxy"))
                 .AddBaseListTypes(SimpleBaseType(ParseTypeName(iface.Name)));
 
@@ -434,7 +449,7 @@ namespace MicroCom.CodeGenerator
                 .AddModifiers(Token(SyntaxKind.UnsafeKeyword));
 
             vtbl = vtbl.WithBaseType(inheritsUnknown ?
-                "MicroCom.Runtime.MicroComVtblBase" :
+                RuntimeTypeName("MicroComVtblBase") :
                 "__MicroCom" + iface.Inherits + "VTable");
             
             var vtblCtor = new List<StatementSyntax>();
@@ -450,7 +465,7 @@ namespace MicroCom.CodeGenerator
                     .AddModifiers(Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.InternalKeyword))
                     .AddAttribute("System.Runtime.CompilerServices.ModuleInitializer")
                     .WithExpressionBody(ArrowExpressionClause(
-                        ParseExpression("MicroCom.Runtime.MicroComRuntime.RegisterVTable(typeof(" +
+                        ParseExpression(RuntimeTypeName() + ".RegisterVTable(typeof(" +
                                         iface.Name + "), new " + vtbl.Identifier.Text + "().CreateVTable())")))
                     .WithSemicolonToken(Semicolon()));
                 
@@ -461,7 +476,7 @@ namespace MicroCom.CodeGenerator
                         .AddModifiers(Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.InternalKeyword))
                         .AddAttribute("System.Runtime.CompilerServices.ModuleInitializer")
                         .WithBody(Block(
-                            ParseStatement("MicroCom.Runtime.MicroComRuntime.Register(typeof(" +
+                            ParseStatement(RuntimeTypeName() + ".Register(typeof(" +
                                            iface.Name + "), new Guid(\"" + guidString + "\"), (p, owns) => new " +
                                            proxyClassName + "(p, owns));")
                         )))

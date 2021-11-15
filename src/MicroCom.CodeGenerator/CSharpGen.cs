@@ -16,6 +16,9 @@ namespace MicroCom.CodeGenerator
         private string _namespace;
         private SyntaxKind _visibility;
 
+        public string RuntimeNamespace = "MicroCom.Runtime";
+        string RuntimeTypeName(string name) => "global::" + RuntimeNamespace + "." + name;
+        string RuntimeTypeName() => RuntimeTypeName("MicroComRuntime");
         public CSharpGen(AstIdlNode idl)
         {
             _idl = idl.Clone();

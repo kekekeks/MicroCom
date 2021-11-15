@@ -17,11 +17,9 @@ namespace MicroCom.CodeGenerator
         CompilationUnitSyntax Unit()
             => CompilationUnit().WithUsings(List(new[]
                 {
-                    "System", "System.Text", "System.Collections", "System.Collections.Generic", "MicroCom.Runtime"
+                    "System", "System.Text", "System.Collections", "System.Collections.Generic", RuntimeNamespace
                 }
                 .Concat(_extraUsings).Select(u => UsingDirective(IdentifierName(u)))));
-
-        public ImmutableArray<Assembly> MefAssemblies { get; set; } = MefHostServices.DefaultAssemblies;
 
         string Format(CompilationUnitSyntax unit)
         {
