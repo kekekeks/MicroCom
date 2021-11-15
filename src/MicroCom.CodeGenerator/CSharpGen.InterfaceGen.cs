@@ -163,6 +163,24 @@ namespace MicroCom.CodeGenerator
             }
         }
 
+        class WideStringArg : Arg
+        {
+            private string FName => "__fixedmarshal_" + Name;
+
+            public override StatementSyntax CreateFixed(StatementSyntax inner)
+            {
+                return FixedStatement(DeclareVar("void*", FName, ParseExpression(Name)), inner);
+            }
+
+            public override ExpressionSyntax Value(bool isHresultReturn) => ParseExpression(FName);
+            public override string ManagedType => "string";
+            public override ExpressionSyntax BackMarshalValue()
+            {
+                return ParseExpression(
+                    $"({Name} == null ? null : System.Runtime.InteropServices.Marshal.PtrToStringUni(new IntPtr(" + Name + ")))");
+            }
+        }
+
         string ConvertNativeType(string type)
         {
             if (type == "size_t")
@@ -194,6 +212,8 @@ namespace MicroCom.CodeGenerator
                     return new InterfaceArg(this) { Name = name, InterfaceType = type.Name, NativeType = "void*" };
                 if (type.Name == "char")
                     return new StringArg { Name = name, NativeType = "byte*" };
+                if (type.Name == "char16_t")
+                    return new WideStringArg { Name = name, NativeType = "byte*" };
             }
 
             return new BypassArg
