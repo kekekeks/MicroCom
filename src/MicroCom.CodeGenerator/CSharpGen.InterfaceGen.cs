@@ -246,7 +246,7 @@ namespace MicroCom.CodeGenerator
                     return new InterfaceArg(this) { Name = name, InterfaceType = type.Name, NativeType = "void*" };
                 if (type.Name == "char")
                     return new StringArg { Name = name, NativeType = "byte*" };
-                if (type.Name == "char16_t")
+                if (type.Name == "char16_t" || type.Name == "WCHAR")
                     return new WideStringArg { Name = name, NativeType = "byte*" };
             }
 
