@@ -25,7 +25,23 @@ namespace MicroCom.CodeGenerator
         {
             var cw = new AdhocWorkspace();
             return
-                "#pragma warning disable 108\n" +
+                @"#pragma warning disable 108
+// ReSharper disable RedundantUsingDirective
+// ReSharper disable JoinDeclarationAndInitializer
+// ReSharper disable ArrangeTypeMemberModifiers
+// ReSharper disable UnusedType.Local
+// ReSharper disable InconsistentNaming
+// ReSharper disable RedundantNameQualifier
+// ReSharper disable RedundantCast
+// ReSharper disable IdentifierTypo
+// ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable RedundantUnsafeContext
+// ReSharper disable RedundantBaseQualifier
+// ReSharper disable EmptyStatement
+// ReSharper disable RedundantAttributeParentheses
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable FieldCanBeMadeReadOnly.Global
+" +
                 Microsoft.CodeAnalysis.Formatting.Formatter.Format(unit.NormalizeWhitespace(), cw, cw.Options
                     .WithChangedOption(CSharpFormattingOptions.NewLineForMembersInObjectInit, true)
                     .WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInObjectCollectionArrayInitializers,
@@ -106,6 +122,13 @@ namespace MicroCom.CodeGenerator
         }
 
         private bool IsInterface(AstTypeNode type) => IsInterface(type.Name);
-    
+
+        static SyntaxTrivia IsNet5OrGreaterDirective =
+            SyntaxTrivia(SyntaxKind.DisabledTextTrivia, "#if NET5_0_OR_GREATER\n");
+
+        static SyntaxTrivia ElseDirective = SyntaxTrivia(SyntaxKind.DisabledTextTrivia, "\n#else\n");
+        static SyntaxTrivia EndIfDirective = SyntaxTrivia(SyntaxKind.DisabledTextTrivia, "\n#endif");
+
+
     }
 }

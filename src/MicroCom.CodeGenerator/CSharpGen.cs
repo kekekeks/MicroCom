@@ -143,6 +143,7 @@ namespace MicroCom.CodeGenerator
                     .WithModifiers(TokenList(Token(_visibility)))
                     .AddAttribute("System.Runtime.InteropServices.StructLayout", "System.Runtime.InteropServices.LayoutKind.Sequential")
                     .AddModifiers(Token(SyntaxKind.UnsafeKeyword))
+                    .AddModifiers(Token(SyntaxKind.PartialKeyword))
                     .WithMembers(new SyntaxList<MemberDeclarationSyntax>(SeparatedList(e.Select(m =>
                         DeclareField(m.Type.ToString(), m.Name, SyntaxKind.PublicKeyword)))))
             ).ToArray());

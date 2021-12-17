@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -65,7 +66,7 @@ namespace MicroCom.CodeGenerator
 
             public override StatementSyntax[] ReturnMarshalResult() => new[]
             {
-                ParseStatement($"return {_gen.RuntimeTypeName("MicroComRuntime")}.CreateProxyFor<" + InterfaceType + ">(" +
+                ParseStatement($"return {_gen.RuntimeTypeName("MicroComRuntime")}.CreateProxyOrNullFor<" + InterfaceType + ">(" +
                                PName + ", true);")
             };
 
@@ -99,13 +100,13 @@ namespace MicroCom.CodeGenerator
 
             public override StatementSyntax[] ReturnMarshalResult() => new[]
             {
-                ParseStatement($"return {_gen.RuntimeTypeName()}.CreateProxyFor<" + InterfaceType + ">(" +
+                ParseStatement($"return {_gen.RuntimeTypeName()}.CreateProxyOrNullFor<" + InterfaceType + ">(" +
                                Name + ", true);")
             };
 
             public override ExpressionSyntax BackMarshalValue()
             {
-                return ParseExpression(_gen.RuntimeTypeName() + ".CreateProxyFor<" + InterfaceType + ">(" +
+                return ParseExpression(_gen.RuntimeTypeName() + ".CreateProxyOrNullFor<" + InterfaceType + ">(" +
                                        Name + ", false)");
             }
             
@@ -316,7 +317,7 @@ namespace MicroCom.CodeGenerator
             var methodAddressExpression = ParseExpression("(*PPV)[base.VTableSize + " + num + "]");
             var methodPointerExpression = ParenthesizedExpression(CastExpression(GetFunctionPointerType(
                 returnArg.NativeType,
-                args.Select(x => x.NativeType).ToList()), methodAddressExpression));
+                args.Select(x => x.NativeType).ToList(), true), methodAddressExpression));
             
             ExpressionSyntax callExpr = InvocationExpression(methodPointerExpression)
                 .AddArgumentListArguments(Argument(ParseExpression("PPV")))
@@ -365,7 +366,7 @@ namespace MicroCom.CodeGenerator
             
             // Generate VTable method
             var shadowDelegate = DelegateDeclaration(ParseTypeName(returnArg.NativeType), member.Name + "Delegate")
-                .AddParameterListParameters(Parameter(Identifier("@this")).WithType(ParseTypeName("IntPtr")))
+                .AddParameterListParameters(Parameter(Identifier("@this")).WithType(ParseTypeName("void*")))
                 .AddParameterListParameters(args.Select(x =>
                     Parameter(Identifier(x.Name)).WithType(ParseTypeName(x.NativeType))).ToArray())
                 .AddAttribute("System.Runtime.InteropServices.UnmanagedFunctionPointer",
@@ -374,13 +375,22 @@ namespace MicroCom.CodeGenerator
             var shadowMethod = MethodDeclaration(shadowDelegate.ReturnType, member.Name)
                 .WithParameterList(shadowDelegate.ParameterList)
                 .AddModifiers(Token(SyntaxKind.StaticKeyword));
+            var attr = AttributeList(SingletonSeparatedList(
+                    Attribute(ParseName("System.Runtime.InteropServices.UnmanagedCallersOnly"))
+                        .WithArgumentList(ParseAttributeArgumentList(
+                            "(CallConvs = new []{typeof(System.Runtime.CompilerServices.CallConvStdcall)})"))))
+                .WithLeadingTrivia(SyntaxTriviaList.Create(IsNet5OrGreaterDirective))
+                .WithTrailingTrivia(SyntaxTriviaList.Create(EndIfDirective));
+                
+            shadowMethod = shadowMethod.AddAttributeLists(attr);
+            
 
             var backPreMarshal = new List<StatementSyntax>();
             foreach (var arg in args)
                 arg.BackPreMarshal(backPreMarshal);
 
             backPreMarshal.Add(
-                ParseStatement($"__target = ({iface.Identifier.Text}){RuntimeTypeName()}.GetObjectFromCcw(@this);"));
+                ParseStatement($"__target = ({iface.Identifier.Text}){RuntimeTypeName()}.GetObjectFromCcw(new IntPtr(@this));"));
 
             var isBackVoidReturn = isVoidReturn || (isHresult && !isHresultLastArgumentReturn);
 
@@ -450,21 +460,39 @@ namespace MicroCom.CodeGenerator
 
             shadowMethod = shadowMethod.WithBody(backBodyBlock);
 
-            vtbl = vtbl.AddMembers(shadowDelegate).AddMembers(shadowMethod);
+            vtbl = vtbl.AddMembers(shadowDelegate);
+            vtbl = vtbl.AddMembers(shadowMethod);
+
+            vtblCtor.Add(ExpressionStatement(InvocationExpression(
+                    ParseExpression("base.AddMethod"),
+                    ArgumentList(SingletonSeparatedList(Argument(
+                        CastExpression(GetFunctionPointerType(
+                                returnArg.NativeType,
+                                args.Select(x => x.NativeType).ToList(), false),
+                            ParseExpression("&" + shadowMethod.Identifier.Text))
+                    )))
+                ))
+                .WithLeadingTrivia(IsNet5OrGreaterDirective)
+                .WithTrailingTrivia(ElseDirective));
+            
             vtblCtor.Add(ParseStatement("base.AddMethod((" + shadowDelegate.Identifier.Text + ")" +
-                                        shadowMethod.Identifier.Text + ");"));
+                                        shadowMethod.Identifier.Text + ");").WithTrailingTrivia(EndIfDirective));
 
 
 
 
         }
 
-        FunctionPointerTypeSyntax GetFunctionPointerType(string returnType, List<string> args)
+        FunctionPointerTypeSyntax GetFunctionPointerType(string returnType, List<string> args, bool convertToVoidPtr)
         {
             string ConvertType(string t) => t.EndsWith("*") ? "void*" : t;
             returnType = ConvertType(returnType);
+
+            if (convertToVoidPtr)
+                args = args.Select(ConvertType).ToList();
+            else
+                args = args.ToList();
             
-            args = args.Select(ConvertType).ToList();
             args.Insert(0, "void*");
             args.Add(returnType);
             
@@ -491,7 +519,7 @@ namespace MicroCom.CodeGenerator
 
             var proxyClassName = "__MicroCom" + iface.Name + "Proxy";
             var proxy = ClassDeclaration(proxyClassName)
-                .AddModifiers(Token(SyntaxKind.UnsafeKeyword), Token(_visibility), Token(SyntaxKind.PartialKeyword))
+                .AddModifiers(Token(_visibility), Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword))
                 .WithBaseType(inheritsUnknown ?
                     RuntimeTypeName("MicroComProxyBase") :
                     ("__MicroCom" + iface.Inherits + "Proxy"))
@@ -512,11 +540,11 @@ namespace MicroCom.CodeGenerator
 
             vtbl = vtbl.AddMembers(
                     ConstructorDeclaration(vtbl.Identifier.Text)
-                        .AddModifiers(Token(SyntaxKind.PublicKeyword))
+                        .AddModifiers(Token(SyntaxKind.ProtectedKeyword))
                         .WithBody(Block(vtblCtor))
                 )
                 .AddMembers(MethodDeclaration(ParseTypeName("void"), "__MicroComModuleInit")
-                    .AddModifiers(Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.InternalKeyword))
+                    .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword))
                     .AddAttribute("System.Runtime.CompilerServices.ModuleInitializer")
                     .WithExpressionBody(ArrowExpressionClause(
                         ParseExpression(RuntimeTypeName() + ".RegisterVTable(typeof(" +
@@ -527,14 +555,14 @@ namespace MicroCom.CodeGenerator
             // Finalize proxy code
             proxy = proxy.AddMembers(
                     MethodDeclaration(ParseTypeName("void"), "__MicroComModuleInit")
-                        .AddModifiers(Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.InternalKeyword))
+                        .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword))
                         .AddAttribute("System.Runtime.CompilerServices.ModuleInitializer")
                         .WithBody(Block(
                             ParseStatement(RuntimeTypeName() + ".Register(typeof(" +
                                            iface.Name + "), new Guid(\"" + guidString + "\"), (p, owns) => new " +
                                            proxyClassName + "(p, owns));")
                         )))
-                .AddMembers(ParseMemberDeclaration("public " + proxyClassName +
+                .AddMembers(ParseMemberDeclaration("protected " + proxyClassName +
                                                    "(IntPtr nativePointer, bool ownsHandle) : base(nativePointer, ownsHandle) {}"))
                 .AddMembers(ParseMemberDeclaration("protected override int VTableSize => base.VTableSize + " +
                                                    iface.Count + ";"));

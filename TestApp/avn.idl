@@ -11,6 +11,6 @@
 [uuid(ED7F3339-8EB4-4912-9D6F-EC4CDD094164})]
 interface IShareHandleSink : IUnknown
 {
-	void SurfaceChanged(void* handle, int width, int height, IUnknown releaseAfterOpen);
+	void SurfaceChanged(void* handle, int width, int height, IUnknown* releaseAfterOpen);
 	void FrameRendered();
 }

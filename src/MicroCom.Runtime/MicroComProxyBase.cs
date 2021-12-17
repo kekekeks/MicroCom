@@ -36,12 +36,12 @@ namespace MicroCom.Runtime
         
         public void AddRef()
         {
-            ((delegate* unmanaged[Stdcall]<void*, void>)(*PPV)[1])(PPV);
+            ((delegate* unmanaged[Stdcall]<void*, int>)(*PPV)[1])(PPV);
         }
 
         public void Release()
         {
-            ((delegate* unmanaged[Stdcall]<void*, void>)(*PPV)[2])(PPV);
+            ((delegate* unmanaged[Stdcall]<void*, int>)(*PPV)[2])(PPV);
         }
 
         public int QueryInterface(Guid guid, out IntPtr ppv)
