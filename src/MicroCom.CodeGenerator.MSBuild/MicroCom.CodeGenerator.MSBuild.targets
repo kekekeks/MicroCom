@@ -3,19 +3,22 @@
   <!-- Ensure that code generator is actually built -->
   
   <Target Name="GenerateMicroComItems"
-          BeforeTargets="CoreCompile"
           DependsOnTargets="ResolveReferences"
           Inputs="@(MicroComIdl)"
           Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
     <MicroComCodeGeneratorTask
             RuntimeNamespace="$(MicroComGeneratorRuntimeNamespace)"
             Inputs="@(MicroComIdl)"/>
+  </Target>
+  
+  <Target Name="UpdateMicroComCompileItems" DependsOnTargets="GenerateMicroComItems" BeforeTargets="CoreCompile">
+    <!-- Remove and re-add generated file, this is needed for the clean build -->
     <ItemGroup>
-      <!-- Remove and re-add generated file, this is needed for the clean build -->
-      <Compile Remove="%(MicroComIdl.OutputFile)"/>
-      <Compile Include="%(MicroComIdl.OutputFile)"/>
+      <Compile Remove="%(MicroComIdl.CSharpInteropPath)"/>
+      <Compile Include="%(MicroComIdl.CSharpInteropPath)"/>
     </ItemGroup>
   </Target>
+  
   <ItemGroup>
     <UpToDateCheckInput Include="@(MicroComIdl)"/>
   </ItemGroup>
