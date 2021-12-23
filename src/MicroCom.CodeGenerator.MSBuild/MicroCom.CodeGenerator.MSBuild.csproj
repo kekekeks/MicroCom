@@ -18,11 +18,11 @@
         <Compile Remove="$(MSBuildThisFileDirectory)\..\MicroCom.CodeGenerator\obj\**\*.cs" />
         <Content Include="*.targets">
             <Pack>true</Pack>
-            <PackagePath>build\;buildTransitive\</PackagePath>
+            <PackagePath>build\;buildTransitive\;buildMultiTargeting\</PackagePath>
         </Content>
         <Content Include="*.props">
             <Pack>true</Pack>
-            <PackagePath>build\;buildTransitive\</PackagePath>
+            <PackagePath>build\;buildTransitive\;buildMultiTargeting\</PackagePath>
         </Content>
     </ItemGroup>
     <Target Name="PackTaskDependencies" BeforeTargets="GenerateNuspec">

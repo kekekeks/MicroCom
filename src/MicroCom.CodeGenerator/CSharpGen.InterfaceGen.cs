@@ -171,7 +171,7 @@ namespace MicroCom.CodeGenerator
             public override ExpressionSyntax BackMarshalValue()
             {
                 return ParseExpression(
-                    $"({Name} == null ? null : System.Runtime.InteropServices.Marshal.PtrToStringUni(new IntPtr(" + Name + ")))");
+                    $"({Name} == null ? null : System.Runtime.InteropServices.Marshal.PtrToStringAnsi(new IntPtr(" + Name + ")))");
             }
 
             public override ExpressionSyntax BackMarshalReturn(string resultVar)

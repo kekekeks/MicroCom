@@ -26,7 +26,7 @@ namespace MicroCom.CodeGenerator.MSBuild
                     Log("Parsing " + i.ItemSpec);
                     var idl = MicroComCodeGenerator.Parse(File.ReadAllText(i.ItemSpec));
                     var cppOutput = i.GetMetadata("CppHeaderPath");
-                    if (cppOutput != null)
+                    if (!string.IsNullOrWhiteSpace(cppOutput))
                     {
                         Log("Writing CPP header to " + cppOutput);
                         WriteOutput(cppOutput, idl.GenerateCppHeader());
@@ -34,7 +34,7 @@ namespace MicroCom.CodeGenerator.MSBuild
                     }
 
                     var interopPath = i.GetMetadata("CSharpInteropPath");
-                    if (interopPath != null)
+                    if (!string.IsNullOrWhiteSpace(interopPath))
                     {
                         Log("Writing C# interop code to " + interopPath);
                         var output = new CSharpGen(idl.Idl)
