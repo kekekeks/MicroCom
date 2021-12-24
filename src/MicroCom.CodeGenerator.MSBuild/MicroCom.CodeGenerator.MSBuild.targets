@@ -1,10 +1,29 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <UsingTask TaskName="MicroComCodeGeneratorTask"  AssemblyFile="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll" />
-  <!-- Ensure that code generator is actually built -->
+
+  <Target Name="_GenerateMicroComItemsDependencyCache" BeforeTargets="GenerateMicroComItems">
+    <MakeDir Directories="$(IntermediateOutputPath)/MicroCom.Generator.MSBuild" />
+    <ItemGroup>
+      <CustomAdditionalGenerateMicroComItemsInputs Include="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll"/>
+    </ItemGroup>
+
+    <Hash ItemsToHash="@(MicroComIdl);@(CustomAdditionalGenerateMicroComItemsInputs);$(MSBuildAllProjects)">
+      <Output TaskParameter="HashResult" PropertyName="GenerateMicroComItemsDependencyHash" />
+    </Hash>
+
+    <WriteLinesToFile Overwrite="true" 
+                      File="$(IntermediateOutputPath)/MicroCom.Generator.MSBuild/Generator.Inputs.cache" 
+                      Lines="$(GenerateMicroComItemsDependencyHash)" 
+                      WriteOnlyWhenDifferent="True" />
+    <ItemGroup>
+      <CustomAdditionalGenerateMicroComItemsInputs Include="$(IntermediateOutputPath)/MicroCom.Generator.MSBuild/Generator.Inputs.cache" />
+      <UpToDateCheckInput Include="@(CustomAdditionalGenerateMicroComItemsInputs)"/>
+    </ItemGroup>
+  </Target>
   
   <Target Name="GenerateMicroComItems"
-          DependsOnTargets="ResolveReferences"
-          Inputs="@(MicroComIdl)"
+          DependsOnTargets="ResolveReferences;_GenerateMicroComItemsDependencyCache"
+          Inputs="@(MicroComIdl);"
           Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
     <MicroComCodeGeneratorTask
             RuntimeNamespace="$(MicroComGeneratorRuntimeNamespace)"
@@ -19,7 +38,12 @@
     </ItemGroup>
   </Target>
   
+  <Target Name="CleanMicroComCompileItems" BeforeTargets="CoreClean">
+    <Delete Files="%(MicroComIdl.CSharpInteropPath)" />
+  </Target>
+  
   <ItemGroup>
     <UpToDateCheckInput Include="@(MicroComIdl)"/>
+    <UpToDateCheckInput Include="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll"/>
   </ItemGroup>
 </Project>
