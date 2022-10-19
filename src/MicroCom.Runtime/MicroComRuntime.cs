@@ -13,6 +13,8 @@ namespace MicroCom.Runtime
         private static ConcurrentDictionary<Type, Guid> _guids = new ConcurrentDictionary<Type, Guid>();
         private static ConcurrentDictionary<Guid, Type> _guidsToTypes = new ConcurrentDictionary<Guid, Type>();
         
+        internal static readonly Guid ManagedObjectInterfaceGuid = Guid.Parse("cd7687c0-a9c2-4563-b08e-a399df50c633");
+        
         static MicroComRuntime()
         {
             Register(typeof(IUnknown), new Guid("00000000-0000-0000-C000-000000000046"),
@@ -87,7 +89,20 @@ namespace MicroCom.Runtime
             var shadow = (MicroComShadow)GCHandle.FromIntPtr(ptr->GcShadowHandle).Target;
             return shadow.Target;
         }
+        
+        public static bool IsComWrapper(IUnknown obj) => obj is MicroComProxyBase;
 
+        public static object TryUnwrapManagedObject(IUnknown obj)
+        {
+            if (obj is not MicroComProxyBase proxy)
+                return null;
+            if (proxy.QueryInterface(ManagedObjectInterfaceGuid, out _) != 0)
+                return null;
+            // Successful QueryInterface always increments ref counter
+            proxy.Release();
+            return GetObjectFromCcw(proxy.NativePointer);
+        }
+        
         public static bool TryGetTypeForGuid(Guid guid, out Type t) => _guidsToTypes.TryGetValue(guid, out t);
 
         public static bool GetVtableFor(Type type, out IntPtr ptr) => _vtables.TryGetValue(type, out ptr);
