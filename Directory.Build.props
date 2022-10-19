@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>0.10.4</Version>
+    <Version>0.10.5</Version>
     <Product>MicroCom</Product>
     <Copyright>Copyright 2021 &#169; Nikita Tsukanov</Copyright>
     <RepositoryUrl>https://github.com/kekekeks/MicroCom</RepositoryUrl>
