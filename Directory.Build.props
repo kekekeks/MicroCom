@@ -1,11 +1,13 @@
 <Project>
   <PropertyGroup>
-    <Version>0.10.5</Version>
+    <Version>0.11.0</Version>
     <Product>MicroCom</Product>
     <Copyright>Copyright 2021 &#169; Nikita Tsukanov</Copyright>
     <RepositoryUrl>https://github.com/kekekeks/MicroCom</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageDescription>IDL-based COM interop codegen. Consumes MIDL-like IDL file, generates efficient cross-platform C# interop and C++ header files.</PackageDescription>
     <RepositoryType>git</RepositoryType>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\sign.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 </Project>
