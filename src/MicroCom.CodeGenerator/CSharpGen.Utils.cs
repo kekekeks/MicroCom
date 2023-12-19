@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Composition.Hosting;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Host.Mef;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
 namespace MicroCom.CodeGenerator
 {
     partial class CSharpGen
@@ -21,11 +19,7 @@ namespace MicroCom.CodeGenerator
                 }
                 .Concat(_extraUsings).Select(u => UsingDirective(IdentifierName(u)))));
 
-        string Format(CompilationUnitSyntax unit)
-        {
-            var cw = new AdhocWorkspace();
-            return
-                @"#pragma warning disable 108
+        private const string SourcePreamble = @"#pragma warning disable 108
 // ReSharper disable RedundantUsingDirective
 // ReSharper disable JoinDeclarationAndInitializer
 // ReSharper disable ArrangeTypeMemberModifiers
@@ -41,17 +35,7 @@ namespace MicroCom.CodeGenerator
 // ReSharper disable RedundantAttributeParentheses
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable FieldCanBeMadeReadOnly.Global
-" +
-                Microsoft.CodeAnalysis.Formatting.Formatter.Format(unit.NormalizeWhitespace(), cw, cw.Options
-                    .WithChangedOption(CSharpFormattingOptions.NewLineForMembersInObjectInit, true)
-                    .WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInObjectCollectionArrayInitializers,
-                        true)
-                    .WithChangedOption(CSharpFormattingOptions.NewLineForMembersInAnonymousTypes, true)
-                    .WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInMethods, true)
-
-                ).ToFullString();
-        }
-        
+";
         
         SyntaxToken Semicolon() => Token(SyntaxKind.SemicolonToken);
 

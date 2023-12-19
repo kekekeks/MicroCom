@@ -15,6 +15,8 @@ ProjectSection(SolutionItems) = preProject
 	Directory.Build.props = Directory.Build.props
 EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroCom.CodeGenerator.Roslyn", "src\MicroCom.CodeGenerator.Roslyn\MicroCom.CodeGenerator.Roslyn.csproj", "{0CACDCEB-161D-4227-98D4-AC0B20635DB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,7 @@ Global
 		{6FFDF0A4-7E23-4E09-8796-79B017193FA2} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
 		{0DDA4056-1692-4DE6-8BD1-D83534CFC4C0} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
 		{F0DC9C08-CE46-4C40-9A91-98191E1F6F94} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
+		{0CACDCEB-161D-4227-98D4-AC0B20635DB9} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5E55FC29-BF1E-428C-9979-896DA1A65D89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -43,5 +46,9 @@ Global
 		{F0DC9C08-CE46-4C40-9A91-98191E1F6F94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F0DC9C08-CE46-4C40-9A91-98191E1F6F94}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F0DC9C08-CE46-4C40-9A91-98191E1F6F94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

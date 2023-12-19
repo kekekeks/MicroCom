@@ -6,14 +6,16 @@ namespace MicroCom.CodeGenerator
     {
         public int Line { get; }
         public int Position { get; }
+        public int CharacterOffsetFromStart { get; }
 
-        public ParseException(string message, int line, int position) : base(message)
+        public ParseException(string message, int line, int position, int characterOffsetFromStart) : base(message)
         {
             Line = line;
             Position = position;
+            CharacterOffsetFromStart = characterOffsetFromStart;
         }
 
-        public ParseException(string message, ref TokenParser parser) : this(message, parser.Line, parser.Position)
+        public ParseException(string message, ref TokenParser parser) : this(message, parser.Line, parser.Position, parser.CharacterOffsetFromStart)
         {
         }
     }

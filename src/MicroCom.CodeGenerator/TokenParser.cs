@@ -59,6 +59,7 @@ namespace MicroCom.CodeGenerator
     internal struct TokenParser
     {
         private SSpan _s;
+        public int CharacterOffsetFromStart { get; private set; }
         public int Position { get; private set; }
         public int Line { get; private set; }
         public TokenParser(string s)
@@ -66,6 +67,7 @@ namespace MicroCom.CodeGenerator
             _s = new SSpan(s);
             Position = 0;
             Line = 0;
+            CharacterOffsetFromStart = 0;
         }
 
         public void SkipWhitespace()
@@ -105,10 +107,11 @@ namespace MicroCom.CodeGenerator
         {
             var l = Line;
             var p = Position;
+            var cofs = CharacterOffsetFromStart;
             while (true)
             {
                 if (_s.Length == 0)
-                    throw new ParseException("No matched */ found for /*", l, p);
+                    throw new ParseException("No matched */ found for /*", l, p, cofs);
 
                 if (_s[0] == '*' && _s.Length > 1 && _s[1] == '/')
                 {
@@ -126,7 +129,7 @@ namespace MicroCom.CodeGenerator
         public void Consume(char c)
         {
             if (!TryConsume(c))
-                throw new ParseException("Expected " + c, Line, Position);
+                throw new ParseException("Expected " + c, ref this);
         }
         public bool TryConsume(char c)
         {
@@ -219,6 +222,7 @@ namespace MicroCom.CodeGenerator
                     Position++;
 
                 _s = _s.Slice(1);
+                CharacterOffsetFromStart++;
                 c--;
             }
         }
@@ -238,7 +242,7 @@ namespace MicroCom.CodeGenerator
             get
             {
                 if (_s.Length == 0)
-                    throw new ParseException("Unexpected EOF", Line, Position);
+                    throw new ParseException("Unexpected EOF", ref this);
                 return _s[0];
             }
         }
@@ -246,14 +250,14 @@ namespace MicroCom.CodeGenerator
         public string ParseIdentifier(SSpan extraValidChars)
         {
             if (!TryParseIdentifier(extraValidChars, out var ident))
-                throw new ParseException("Identifier expected", Line, Position);
+                throw new ParseException("Identifier expected", ref this);
             return ident.ToString();
         }
         
         public string ParseIdentifier()
         {
             if (!TryParseIdentifier(out var ident))
-                throw new ParseException("Identifier expected", Line, Position);
+                throw new ParseException("Identifier expected", ref this);
             return ident.ToString();
         }
         
@@ -340,10 +344,11 @@ namespace MicroCom.CodeGenerator
             var len = 0;
             var l = Line;
             var p = Position;
+            var cofs = CharacterOffsetFromStart;
             while (true)
             {
                 if (_s.Length == 0)
-                    throw new ParseException("Expected " + c + " before EOF", l, p);
+                    throw new ParseException("Expected " + c + " before EOF", l, p, cofs);
                 
                 if (_s[0] != c)
                 {
@@ -361,10 +366,11 @@ namespace MicroCom.CodeGenerator
             var len = 0;
             var l = Line;
             var p = Position;
+            var cofs = CharacterOffsetFromStart;
             while (true)
             {
                 if (_s.Length == 0)
-                    throw new ParseException("Expected any of '" + chars.ToString() + "' before EOF", l, p);
+                    throw new ParseException("Expected any of '" + chars.ToString() + "' before EOF", l, p, cofs);
 
                 var foundTerminator = false;
                 foreach (var term in chars)

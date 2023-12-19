@@ -29,6 +29,7 @@ namespace MicroCom.CodeGenerator
             
             _extraUsings = _idl.Attributes.Where(u => u.Name == "clr-using").Select(u => u.Value).ToList();
             _namespace = _idl.GetAttribute("clr-namespace");
+            RuntimeNamespace = _idl.GetAttributeOrDefault("clr-runtime-namespace") ?? RuntimeNamespace;
             var visibilityString = _idl.GetAttribute("clr-access");
 
             if (visibilityString == "internal")
