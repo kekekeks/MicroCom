@@ -54,7 +54,6 @@ namespace MicroCom.Runtime
                 if (_shadows.TryGetValue(type, out var shadow))
                 {
                     var targetCcw = (Ccw*)shadow;
-                    AddRef(targetCcw);
                     *ppv = targetCcw;
                     return 0;
                 }
