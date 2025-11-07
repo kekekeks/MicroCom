@@ -175,7 +175,7 @@ namespace MicroCom.CodeGenerator
             var genericParams = ParseGenericParameters(ref parser);
             EnsureOpenBracket(ref parser);
             var rv = new AstStructNode { Name = name, Attributes = attrs, GenericParameters = genericParams};
-            while (!parser.TryConsume('}') && !parser.Eof)
+            while (!parser.TryConsume('}'))
             {
                 var memberAttrs = ParseLocalAttributes(ref parser);
                 var t = ParseType(ref parser);
@@ -209,7 +209,7 @@ namespace MicroCom.CodeGenerator
             {
                 Name = interfaceName, Attributes = interfaceAttrs, Inherits = inheritsFrom
             };
-            while (!parser.TryConsume('}') && !parser.Eof)
+            while (!parser.TryConsume('}'))
             {
                 var memberAttrs = ParseLocalAttributes(ref parser);
                 var returnType = ParseType(ref parser);
