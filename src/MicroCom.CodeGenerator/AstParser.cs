@@ -9,22 +9,34 @@ namespace MicroCom.CodeGenerator
         {
             var parser = new TokenParser(source);
             var idl = new AstIdlNode { Attributes = ParseGlobalAttributes(ref parser) };
-
+            idl.Comments = parser.GetAndClearPrecedingComments();
             while (!parser.Eof)
             {
+                var comments = parser.GetAndClearPrecedingComments();
                 var attrs = ParseLocalAttributes(ref parser);
                 if (parser.TryConsume(";"))
                     continue;
                 if (parser.TryParseKeyword("enum"))
-                    idl.Enums.Add(ParseEnum(attrs, ref parser));
+                {
+                    var node = ParseEnum(attrs, ref parser);
+                    node.Comments = comments;
+                    idl.Enums.Add(node);
+                }
                 else if (parser.TryParseKeyword("struct"))
-                    idl.Structs.Add(ParseStruct(attrs, ref parser));
+                {
+                    var node = ParseStruct(attrs, ref parser);
+                    node.Comments = comments;
+                    idl.Structs.Add(node);
+                }
                 else if (parser.TryParseKeyword("interface"))
-                    idl.Interfaces.Add(ParseInterface(attrs, ref parser));
+                {
+                    var node = ParseInterface(attrs, ref parser);
+                    node.Comments = comments;
+                    idl.Interfaces.Add(node);
+                }
                 else
                     throw new ParseException("Unexpected character", ref parser);
             }
-
             return idl;
         }
 
@@ -110,34 +122,33 @@ namespace MicroCom.CodeGenerator
 
         static AstEnumNode ParseEnum(AstAttributes attrs, ref TokenParser parser)
         {
+            var comments = parser.GetAndClearPrecedingComments();
             var name = parser.ParseIdentifier();
             EnsureOpenBracket(ref parser);
-            var rv = new AstEnumNode { Name = name, Attributes = attrs };
+            var rv = new AstEnumNode { Name = name, Attributes = attrs, Comments = comments };
             while (!parser.TryConsume('}') && !parser.Eof)
             {
+                var memberComments = parser.GetAndClearPrecedingComments();
                 if (parser.TryConsume(','))
                     continue;
-
                 var ident = parser.ParseIdentifier();
-
                 // Automatic value
                 if (parser.TryConsume(',') || parser.Peek == '}')
                 {
-                    rv.Add(new AstEnumMemberNode(ident, null));
+                    var member = new AstEnumMemberNode(ident, null);
+                    member.Comments = memberComments;
+                    rv.Add(member);
                     continue;
                 }
-
                 if (!parser.TryConsume('='))
                     throw new ParseException("Unexpected character", ref parser);
-
                 var value = parser.ReadToAny(",}").Trim();
-                rv.Add(new AstEnumMemberNode(ident, value));
-                
+                var memberNode = new AstEnumMemberNode(ident, value);
+                memberNode.Comments = memberComments;
+                rv.Add(memberNode);
                 if (parser.Eof)
                     throw new ParseException("Unexpected EOF", ref parser);
             }
-
-
             return rv;
         }
 
@@ -170,13 +181,14 @@ namespace MicroCom.CodeGenerator
 
         static AstStructNode ParseStruct(AstAttributes attrs, ref TokenParser parser)
         {
+            var comments = parser.GetAndClearPrecedingComments();
             var name = parser.ParseIdentifier();
-            
             var genericParams = ParseGenericParameters(ref parser);
             EnsureOpenBracket(ref parser);
-            var rv = new AstStructNode { Name = name, Attributes = attrs, GenericParameters = genericParams};
+            var rv = new AstStructNode { Name = name, Attributes = attrs, GenericParameters = genericParams, Comments = comments };
             while (!parser.TryConsume('}'))
             {
+                var memberComments = parser.GetAndClearPrecedingComments();
                 var memberAttrs = ParseLocalAttributes(ref parser);
                 var t = ParseType(ref parser);
                 bool parsedAtLeastOneMember = false;
@@ -184,66 +196,61 @@ namespace MicroCom.CodeGenerator
                 {
                     // Skip any ,
                     while (parser.TryConsume(',')) { }
-
                     var ident = parser.ParseIdentifier();
                     parsedAtLeastOneMember = true;
-                    rv.Add(new AstStructMemberNode { Name = ident, Type = t, Attributes = memberAttrs});
+                    var memberNode = new AstStructMemberNode { Name = ident, Type = t, Attributes = memberAttrs, Comments = memberComments };
+                    rv.Add(memberNode);
                 }
-
                 if (!parsedAtLeastOneMember)
                     throw new ParseException("Expected at least one enum member with declared type " + t, ref parser);
             }
-
             return rv;
         }
 
         static AstInterfaceNode ParseInterface(AstAttributes interfaceAttrs, ref TokenParser parser)
         {
+            var comments = parser.GetAndClearPrecedingComments();
             var interfaceName = parser.ParseIdentifier();
             string inheritsFrom = null; 
             if (parser.TryConsume(":")) 
                 inheritsFrom = parser.ParseIdentifier();
-
             EnsureOpenBracket(ref parser);
             var rv = new AstInterfaceNode
             {
-                Name = interfaceName, Attributes = interfaceAttrs, Inherits = inheritsFrom
+                Name = interfaceName, Attributes = interfaceAttrs, Inherits = inheritsFrom, Comments = comments
             };
             while (!parser.TryConsume('}'))
             {
+                var memberComments = parser.GetAndClearPrecedingComments();
                 var memberAttrs = ParseLocalAttributes(ref parser);
                 var returnType = ParseType(ref parser);
                 var name = parser.ParseIdentifier();
                 var member = new AstInterfaceMemberNode
                 {
-                    Name = name, ReturnType = returnType, Attributes = memberAttrs
+                    Name = name, ReturnType = returnType, Attributes = memberAttrs, Comments = memberComments
                 };
                 rv.Add(member);
-
                 parser.Consume('(');
                 while (true)
                 {
+                    var argComments = parser.GetAndClearPrecedingComments();
                     if (parser.TryConsume(')'))
                         break;
-                    
                     var argumentAttrs = ParseLocalAttributes(ref parser);
                     var type = ParseType(ref parser);
                     var argName = parser.ParseIdentifier();
                     member.Add(new AstInterfaceMemberArgumentNode
                     {
-                        Name = argName, Type = type, Attributes = argumentAttrs
+                        Name = argName, Type = type, Attributes = argumentAttrs, Comments = argComments
                     });
-
                     if (parser.TryConsume(')'))
                         break;
                     if (parser.TryConsume(','))
                         continue;
                     throw new ParseException("Unexpected character", ref parser);
                 }
-
                 parser.Consume(';');
             }
-
             return rv;
         }
     }

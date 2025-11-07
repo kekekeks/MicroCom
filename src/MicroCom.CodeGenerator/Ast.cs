@@ -39,11 +39,12 @@ namespace MicroCom.CodeGenerator
     {
         public AstAttributes Attributes { get; set; } = new AstAttributes();
         public string Name { get; set; }
+        public List<string> Comments { get; set; } = new List<string>();
         public override string ToString() => "Enum " + Name;
 
         public AstEnumNode Clone()
         {
-            var rv = new AstEnumNode { Name = Name, Attributes = Attributes.Clone() };
+            var rv = new AstEnumNode { Name = Name, Attributes = Attributes.Clone(), Comments = Comments.ToList() };
             rv.AddRange(this.Select(x => x.Clone()));
             return rv;
         }
@@ -53,15 +54,15 @@ namespace MicroCom.CodeGenerator
     {
         public string Name { get; set; }
         public string Value { get; set; }
+        public List<string> Comments { get; set; } = new List<string>();
 
         public AstEnumMemberNode(string name, string value)
         {
             Name = name;
             Value = value;
         }
-        
         public override string ToString() => $"Enum member {Name} = {Value}";
-        public AstEnumMemberNode Clone() => new AstEnumMemberNode(Name, Value);
+        public AstEnumMemberNode Clone() => new AstEnumMemberNode(Name, Value) { Comments = Comments.ToList() };
     }
 
     class AstStructNode : List<AstStructMemberNode>, IAstNodeWithAttributes
@@ -69,11 +70,12 @@ namespace MicroCom.CodeGenerator
         public AstAttributes Attributes { get; set; } = new AstAttributes();
         public List<string> GenericParameters { get; set; } = new List<string>();
         public string Name { get; set; }
+        public List<string> Comments { get; set; } = new List<string>();
         public override string ToString() => "Struct " + Name;
         
         public AstStructNode Clone()
         {
-            var rv = new AstStructNode { Name = Name, Attributes = Attributes.Clone(), GenericParameters = GenericParameters.ToList()};
+            var rv = new AstStructNode { Name = Name, Attributes = Attributes.Clone(), GenericParameters = GenericParameters.ToList(), Comments = Comments.ToList() };
             rv.AddRange(this.Select(x => x.Clone()));
             return rv;
         }
@@ -99,9 +101,9 @@ namespace MicroCom.CodeGenerator
     {
         public string Name { get; set; }
         public AstTypeNode Type { get; set; }
-
+        public List<string> Comments { get; set; } = new List<string>();
         public override string ToString() => $"Struct member {Type.Format()} {Name}";
-        public AstStructMemberNode Clone() => new AstStructMemberNode() { Name = Name, Type = Type.Clone() };
+        public AstStructMemberNode Clone() => new AstStructMemberNode() { Name = Name, Type = Type.Clone(), Comments = Comments.ToList() };
         public AstAttributes Attributes { get; set; } = new AstAttributes();
     }
 
@@ -110,6 +112,7 @@ namespace MicroCom.CodeGenerator
         public AstAttributes Attributes { get; set; } = new AstAttributes();
         public string Name { get; set; }
         public string Inherits { get; set; }
+        public List<string> Comments { get; set; } = new List<string>();
         
         public override string ToString()
         {
@@ -119,7 +122,7 @@ namespace MicroCom.CodeGenerator
         }
         public AstInterfaceNode Clone()
         {
-            var rv = new AstInterfaceNode { Name = Name, Inherits = Inherits, Attributes = Attributes.Clone() };
+            var rv = new AstInterfaceNode { Name = Name, Inherits = Inherits, Attributes = Attributes.Clone(), Comments = Comments.ToList() };
             rv.AddRange(this.Select(x => x.Clone()));
             return rv;
         }
@@ -130,17 +133,16 @@ namespace MicroCom.CodeGenerator
         public string Name { get; set; }
         public AstTypeNode ReturnType { get; set; }
         public AstAttributes Attributes { get; set; } = new AstAttributes();
-
+        public List<string> Comments { get; set; } = new List<string>();
         public AstInterfaceMemberNode Clone()
         {
             var rv = new AstInterfaceMemberNode()
             {
-                Name = Name, Attributes = Attributes.Clone(), ReturnType = ReturnType
+                Name = Name, Attributes = Attributes.Clone(), ReturnType = ReturnType, Comments = Comments.ToList()
             };
             rv.AddRange(this.Select(x => x.Clone()));
             return rv;
         }
-
         public override string ToString() =>
             $"Interface member {ReturnType.Format()} {Name} ({string.Join(", ", this.Select(x => x.Format()))})";
     }
@@ -150,14 +152,12 @@ namespace MicroCom.CodeGenerator
         public string Name { get; set; }
         public AstTypeNode Type { get; set; }
         public AstAttributes Attributes { get; set; } = new AstAttributes();
-
-        
+        public List<string> Comments { get; set; } = new List<string>();
         public  string Format() => $"{Type.Format()} {Name}";
         public override string ToString() => "Argument " + Format();
-
         public AstInterfaceMemberArgumentNode Clone() => new AstInterfaceMemberArgumentNode
         {
-            Name = Name, Type = Type.Clone(), Attributes = Attributes.Clone()
+            Name = Name, Type = Type.Clone(), Attributes = Attributes.Clone(), Comments = Comments.ToList()
         };
     }
 
@@ -229,6 +229,7 @@ namespace MicroCom.CodeGenerator
         public List<AstEnumNode> Enums { get; set; } = new List<AstEnumNode>();
         public List<AstStructNode> Structs { get; set; } = new List<AstStructNode>();
         public List<AstInterfaceNode> Interfaces { get; set; } = new List<AstInterfaceNode>();
+        public List<string> Comments { get; set; } = new List<string>();
 
         public AstIdlNode Clone() => new AstIdlNode()
         {

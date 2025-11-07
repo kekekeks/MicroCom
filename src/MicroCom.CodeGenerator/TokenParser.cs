@@ -59,6 +59,7 @@ namespace MicroCom.CodeGenerator
     internal struct TokenParser
     {
         private SSpan _s;
+        private List<string> _pendingComments;
         public int CharacterOffsetFromStart { get; private set; }
         public int Position { get; private set; }
         public int Line { get; private set; }
@@ -68,6 +69,7 @@ namespace MicroCom.CodeGenerator
             Position = 0;
             Line = 0;
             CharacterOffsetFromStart = 0;
+            _pendingComments = new List<string>();
         }
 
         public void SkipWhitespace()
@@ -92,35 +94,38 @@ namespace MicroCom.CodeGenerator
             }
         }
 
+        public List<string> GetAndClearPrecedingComments()
+        {
+            var rv = _pendingComments;
+            _pendingComments = new List<string>();
+            return rv;
+        }
+
         void SkipOneLineComment()
         {
-            while (true)
-            {
-                if (_s.Length > 0 && _s[0] != '\n' && _s[0] != '\r')
-                    Advance(1);
-                else
-                    return;
-            }
+            int start = 2; // skip '//'
+            int len = 0;
+            while (start + len < _s.Length && _s[start + len] != '\n' && _s[start + len] != '\r')
+                len++;
+            var comment = _s.Slice(start, len).ToString();
+            _pendingComments.Add(comment.Trim());
+            Advance(2 + len); // skip '//' and comment
+            // skip newline if present
+            if (_s.Length > 0 && (_s[0] == '\n' || _s[0] == '\r'))
+                Advance(1);
         }
-        
+    
         void SkipMultiLineComment()
         {
-            var l = Line;
-            var p = Position;
-            var cofs = CharacterOffsetFromStart;
-            while (true)
-            {
-                if (_s.Length == 0)
-                    throw new ParseException("No matched */ found for /*", l, p, cofs);
-
-                if (_s[0] == '*' && _s.Length > 1 && _s[1] == '/')
-                {
-                    Advance(2);
-                    return;
-                }
-
-                Advance(1);
-            }
+            int start = 2; // skip '/*'
+            int len = 0;
+            while (start + len + 1 < _s.Length && !(_s[start + len] == '*' && _s[start + len + 1] == '/'))
+                len++;
+            if (start + len + 1 >= _s.Length)
+                throw new ParseException("No matched */ found for /*", Line, Position, CharacterOffsetFromStart);
+            var comment = _s.Slice(start, len).ToString();
+            _pendingComments.Add(comment.Trim());
+            Advance(2 + len + 2); // skip '/*', comment, and '*/'
         }
 
         static bool IsAlphaNumeric(char ch) => (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
