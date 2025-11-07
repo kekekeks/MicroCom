@@ -1,0 +1,12 @@
+@clr-namespace Test
+@clr-access public
+struct Foo<T>
+{
+    T* bar;
+}
+
+struct NormalStruct
+{
+    int a;
+}
+

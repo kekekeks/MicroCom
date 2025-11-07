@@ -1,0 +1,9 @@
+@clr-namespace Test
+@clr-access internal
+[uuid(5b695a79-8357-498e-9fa0-e1ea3e47ab6b)]
+interface ISimpleInterface
+{
+    void DoWork();
+    int GetValue();
+}
+

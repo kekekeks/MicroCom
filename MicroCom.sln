@@ -17,6 +17,10 @@ EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroCom.CodeGenerator.Roslyn", "src\MicroCom.CodeGenerator.Roslyn\MicroCom.CodeGenerator.Roslyn.csproj", "{0CACDCEB-161D-4227-98D4-AC0B20635DB9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C5428E5D-961E-458F-B5F0-3F1EFE16AF62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroCom.CodeGenerator.Tests", "tests\MicroCom.CodeGenerator.Tests\MicroCom.CodeGenerator.Tests.csproj", "{FED5E514-047A-41E0-965E-010AAAB48D20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +32,7 @@ Global
 		{0DDA4056-1692-4DE6-8BD1-D83534CFC4C0} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
 		{F0DC9C08-CE46-4C40-9A91-98191E1F6F94} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
 		{0CACDCEB-161D-4227-98D4-AC0B20635DB9} = {52656943-D5E3-468C-83AB-5F38BBBCC7B0}
+		{FED5E514-047A-41E0-965E-010AAAB48D20} = {C5428E5D-961E-458F-B5F0-3F1EFE16AF62}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5E55FC29-BF1E-428C-9979-896DA1A65D89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -50,5 +55,9 @@ Global
 		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0CACDCEB-161D-4227-98D4-AC0B20635DB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FED5E514-047A-41E0-965E-010AAAB48D20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FED5E514-047A-41E0-965E-010AAAB48D20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FED5E514-047A-41E0-965E-010AAAB48D20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FED5E514-047A-41E0-965E-010AAAB48D20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

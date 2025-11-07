@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <SignAssembly>true</SignAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyOriginatorKeyFile>../../sign.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="cases\EnumGenerationTests\Generates_Enum_From_Idl.expected.cs" />
+    <Compile Include="cases\InterfaceGenerationTests\Generates_Interface_From_Idl.expected.cs" />
+    <Compile Include="cases\StructGenerationTests\Generates_Structs_With_Generics_From_Idl.expected.cs" />
+    <Compile Include="cases\TypeMappingTests\Applies_Clr_Map_Directives.expected.cs" />
+    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\src\MicroCom.CodeGenerator\MicroCom.CodeGenerator.csproj" />
+    <Compile Remove="cases/**/*"/>
+    <None Include="cases/**/*"/>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+@clr-namespace Test
+@clr-access public
+@clr-map int64_t long
+struct MappedStruct
+{
+    int64_t value;
+}
+
