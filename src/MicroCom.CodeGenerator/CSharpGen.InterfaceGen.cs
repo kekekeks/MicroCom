@@ -55,7 +55,9 @@ namespace MicroCom.CodeGenerator
 
             public string InterfaceType;
             public override ExpressionSyntax Value(bool isHresultReturn) => ParseExpression("&" + PName);
-            public override string ManagedType => InterfaceType;
+            public override string ManagedType =>
+                Attributes != null && Attributes.HasAttribute("nullable") ? InterfaceType + "?" : InterfaceType;
+
 
             private string PName => "__marshal_" + Name;
 
@@ -96,8 +98,9 @@ namespace MicroCom.CodeGenerator
             public override ExpressionSyntax Value(bool isHresultReturn) =>
                 ParseExpression(_gen.RuntimeTypeName() + ".GetNativePointer(" + Name + ")");
 
-            public override string ManagedType => InterfaceType;
-
+            public override string ManagedType =>
+                Attributes != null && Attributes.HasAttribute("nullable") ? InterfaceType + "?" : InterfaceType;
+            
             public override StatementSyntax[] ReturnMarshalResult() => new[]
             {
                 ParseStatement($"return {_gen.RuntimeTypeName()}.CreateProxyOrNullFor<" + InterfaceType + ">(" +

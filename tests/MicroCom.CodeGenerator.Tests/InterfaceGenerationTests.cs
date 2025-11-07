@@ -11,5 +11,11 @@ namespace MicroCom.CodeGenerator.Tests
         {
             RunAndAssertGenerator();
         }
+
+        [Fact]
+        public void NullableParameters()
+        {
+            RunAndAssertGenerator();
+        }
     }
 }
