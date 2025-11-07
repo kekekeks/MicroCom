@@ -140,14 +140,27 @@ namespace MicroCom.CodeGenerator
         NamespaceDeclarationSyntax GenerateStructs(NamespaceDeclarationSyntax ns)
         {
             return ns.AddMembers(_idl.Structs.Select(e =>
-                StructDeclaration(e.Name)
+            {
+                var decl = StructDeclaration(e.Name)
                     .WithModifiers(TokenList(Token(_visibility)))
-                    .AddAttribute("System.Runtime.InteropServices.StructLayout", "System.Runtime.InteropServices.LayoutKind.Sequential")
+                    .AddAttribute("System.Runtime.InteropServices.StructLayout",
+                        "System.Runtime.InteropServices.LayoutKind.Sequential")
                     .AddModifiers(Token(SyntaxKind.UnsafeKeyword))
                     .AddModifiers(Token(SyntaxKind.PartialKeyword))
                     .WithMembers(new SyntaxList<MemberDeclarationSyntax>(SeparatedList(e.Select(m =>
-                        DeclareField(m.Type.ToString(), m.Name, SyntaxKind.PublicKeyword)))))
-            ).ToArray());
+                        DeclareField(m.Type.ToString(), m.Name, SyntaxKind.PublicKeyword)))));
+                if(e.GenericParameters.Count > 0)
+                {
+                    decl = decl.AddTypeParameterListParameters(e.GenericParameters.Select(TypeParameter).ToArray())
+                        .AddConstraintClauses(e.GenericParameters.Select(p => TypeParameterConstraintClause(
+                                IdentifierName(p),
+                                SingletonSeparatedList(
+                                    (TypeParameterConstraintSyntax)TypeConstraint(ParseTypeName("unmanaged")))))
+                            .ToArray());
+                }
+
+                return decl;
+            }).ToArray());
         }
 
 

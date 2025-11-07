@@ -67,12 +67,13 @@ namespace MicroCom.CodeGenerator
     class AstStructNode : List<AstStructMemberNode>, IAstNodeWithAttributes
     {
         public AstAttributes Attributes { get; set; } = new AstAttributes();
+        public List<string> GenericParameters { get; set; } = new List<string>();
         public string Name { get; set; }
         public override string ToString() => "Struct " + Name;
         
         public AstStructNode Clone()
         {
-            var rv = new AstStructNode { Name = Name, Attributes = Attributes.Clone() };
+            var rv = new AstStructNode { Name = Name, Attributes = Attributes.Clone(), GenericParameters = GenericParameters.ToList()};
             rv.AddRange(this.Select(x => x.Clone()));
             return rv;
         }
