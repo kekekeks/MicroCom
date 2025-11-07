@@ -19,7 +19,7 @@ namespace MicroCom.CodeGenerator
             public string Name;
             public string NativeType;
             public AstAttributes Attributes { get; set; }
-            public virtual StatementSyntax CreateFixed(StatementSyntax inner) => inner;
+            public virtual StatementSyntax CreateFixedOrUsing(StatementSyntax inner) => inner;
 
             public virtual void PreMarshal(List<StatementSyntax> body)
             {
@@ -78,7 +78,7 @@ namespace MicroCom.CodeGenerator
             public override ExpressionSyntax BackMarshalReturn(string resultVar)
             {
                 return ParseExpression(
-                    _gen.RuntimeTypeName() + $".GetNativePointer({resultVar}, true)");
+                    _gen.RuntimeTypeName() + $".CreateNativePointer({resultVar})");
             }
         }
 
@@ -92,9 +92,20 @@ namespace MicroCom.CodeGenerator
             }
 
             public string InterfaceType;
+            
+            private string WrapperName => "__com_ref_" + Name;
+
+            public override StatementSyntax CreateFixedOrUsing(StatementSyntax inner)
+            {
+                return UsingStatement(
+                    
+                    DeclareVar("var", WrapperName, 
+                    ParseExpression(_gen.RuntimeTypeName() + ".GetNativeComReferenceStructForOneInteropCall(" + Name +
+                                    ")")), null, inner);
+            }
 
             public override ExpressionSyntax Value(bool isHresultReturn) =>
-                ParseExpression(_gen.RuntimeTypeName() + ".GetNativePointer(" + Name + ")");
+                ParseExpression(WrapperName + ".Pointer");
 
             public override string ManagedType => InterfaceType;
 
@@ -112,7 +123,7 @@ namespace MicroCom.CodeGenerator
             
             public override ExpressionSyntax BackMarshalReturn(string resultVar)
             {
-                return ParseExpression(_gen.RuntimeTypeName() + $".GetNativePointer({resultVar}, true)");
+                return ParseExpression(_gen.RuntimeTypeName() + $".CreateNativePointer({resultVar})");
             }
         }
 
@@ -150,7 +161,7 @@ namespace MicroCom.CodeGenerator
                 body.Add(ParseStatement($"System.Text.Encoding.UTF8.GetBytes({Name}, 0, {Name}.Length, {BName}, 0);"));
             }
 
-            public override StatementSyntax CreateFixed(StatementSyntax inner)
+            public override StatementSyntax CreateFixedOrUsing(StatementSyntax inner)
             {
                 return FixedStatement(DeclareVar("byte*", FName, ParseExpression(BName)), inner);
             }
@@ -185,7 +196,7 @@ namespace MicroCom.CodeGenerator
         {
             private string FName => "__fixedmarshal_" + Name;
 
-            public override StatementSyntax CreateFixed(StatementSyntax inner)
+            public override StatementSyntax CreateFixedOrUsing(StatementSyntax inner)
             {
                 return FixedStatement(DeclareVar("void*", FName, ParseExpression(Name)), inner);
             }
@@ -336,7 +347,7 @@ namespace MicroCom.CodeGenerator
             // Wrap call into fixed() blocks
             StatementSyntax callStatement = ExpressionStatement(callExpr);
             foreach (var arg in args)
-                callStatement = arg.CreateFixed(callStatement);
+                callStatement = arg.CreateFixedOrUsing(callStatement);
 
             // Build proxy body
             var proxyBody = Block()

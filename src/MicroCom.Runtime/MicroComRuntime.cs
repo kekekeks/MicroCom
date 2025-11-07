@@ -53,16 +53,59 @@ namespace MicroCom.Runtime
             return _factories[type](pObject, ownsHandle);
         }
 
+        [Obsolete("Please avoid this method since non-owning references are dangerous, use CreateNativeComIntPtr() or CreateNativeComReferenceStruct() instead")]
         public static IntPtr GetNativeIntPtr<T>(this T obj, bool owned = false) where T : IUnknown
             => new IntPtr(GetNativePointer(obj, owned));
+
+        [Obsolete("Please avoid this method since non-owning references are dangerous, use CreateNativePointer() or CreateNativeComReferenceStruct() instead")]
         public static void* GetNativePointer<T>(T obj, bool owned = false) where T : IUnknown
         {
+            return GetNativePointerCore(obj, owned ? OwnershipPolicy.AlwaysOwned : OwnershipPolicy.NeverOwned, out _);
+        }
+        
+        public static void* CreateNativeComPointer<T>(this T obj) where T : IUnknown
+        {
+            return GetNativePointerCore(obj, OwnershipPolicy.AlwaysOwned, out _);
+        }
+        
+        public static IntPtr CreateNativeComIntPtr<T>(this T obj) where T : IUnknown
+        {
+            return (IntPtr)CreateNativeComPointer(obj);
+        }
+
+        public static MicroComDisposableNativeReferenceStruct CreateNativeComReferenceStruct<T>(this T obj) where T : IUnknown
+        {
+            return new MicroComDisposableNativeReferenceStruct(CreateNativeComIntPtr(obj));
+        }
+
+        public static MicroComDisposableNativeReferenceStruct
+            GetNativeComReferenceStructForOneInteropCall<T>(T obj) where T : IUnknown
+        {
+            var ptr = GetNativePointerCore(obj, OwnershipPolicy.OwnedIfCcw, out var owned);
+            return new((IntPtr)ptr, owned);
+        }
+
+
+        enum OwnershipPolicy
+        {
+            NeverOwned,
+            AlwaysOwned,
+            OwnedIfCcw
+        }
+        
+        static void* GetNativePointerCore<T>(T obj, OwnershipPolicy policy, out bool isOwned) where T : IUnknown
+        {
+            isOwned = false;
             if (obj == null)
                 return null;
             if (obj is MicroComProxyBase proxy)
             {
-                if(owned)
+                if (policy == OwnershipPolicy.AlwaysOwned)
+                {
+                    isOwned = true;
                     proxy.AddRef();
+                }
+
                 return (void*)proxy.NativePointer;
             }
 
@@ -76,8 +119,12 @@ namespace MicroCom.Runtime
                         "Unable to create native callable wrapper for type " + typeof(T) + " for instance of type " +
                         obj.GetType(),
                         res);
-                if (owned)
+                if (policy is OwnershipPolicy.AlwaysOwned or OwnershipPolicy.OwnedIfCcw)
+                {
                     container.Shadow.AddRef((Ccw*)ptr);
+                    isOwned = true;
+                }
+
                 return ptr;
             }
             throw new ArgumentException("Unable to get a native pointer for " + obj);
