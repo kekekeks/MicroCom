@@ -1,0 +1,62 @@
+@clr-namespace Test
+@clr-access internal
+
+/// <summary>
+/// Test interface for XML comment support.
+/// </summary>
+[uuid(4b236ea0-ca9d-4588-a8a3-ba7d94f941a7)]
+interface IXmlCommentTest
+{
+    /// <summary>
+    /// Does something important.
+    /// </summary>
+    void DoSomething();
+
+    /// <summary>
+    /// Gets a value.
+    /// </summary>
+    /// <returns>The value.</returns>
+    int GetValue();
+
+    /// <summary>
+    /// Processes a value.
+    /// </summary>
+    /// <param name="value">The value to process.</param>
+    void ProcessValue(int value);
+}
+
+/// <summary>
+/// Test struct with XML comments.
+/// </summary>
+struct XmlCommentStruct
+{
+    /// <summary>
+    /// The integer value.
+    /// </summary>
+    int Value;
+
+    /// <summary>
+    /// The string name.
+    /// </summary>
+    string Name;
+}
+
+/// <summary>
+/// Test enum with XML comments.
+/// </summary>
+enum XmlCommentEnum
+{
+    /// <summary>
+    /// First value.
+    /// </summary>
+    First = 0,
+    /// <summary>
+    /// Second value.
+    /// </summary>
+    Second = 1,
+    /// <summary>
+    /// Third value.
+    /// </summary>
+    Third = 2
+}
+

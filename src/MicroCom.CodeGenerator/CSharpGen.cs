@@ -123,17 +123,18 @@ namespace MicroCom.CodeGenerator
             return ns.AddMembers(_idl.Enums.Select(e =>
             {
                 var dec =  EnumDeclaration(e.Name)
+                    
                     .WithModifiers(TokenList(Token(_visibility)))
                     .WithMembers(SeparatedList(e.Select(m =>
                     {
-                        var member = EnumMemberDeclaration(m.Name);
+                        var member = EnumMemberDeclaration(m.Name).WithXmlComments(m);
                         if (m.Value != null)
                             return member.WithEqualsValue(EqualsValueClause(ParseExpression(m.Value)));
                         return member;
                     })));
                 if (e.HasAttribute("flags"))
                     dec = dec.AddAttribute("System.Flags");
-                return dec;
+                return dec.WithXmlComments(e);
             }).ToArray());
         }
         
@@ -148,7 +149,9 @@ namespace MicroCom.CodeGenerator
                     .AddModifiers(Token(SyntaxKind.UnsafeKeyword))
                     .AddModifiers(Token(SyntaxKind.PartialKeyword))
                     .WithMembers(new SyntaxList<MemberDeclarationSyntax>(SeparatedList(e.Select(m =>
-                        DeclareField(m.Type.ToString(), m.Name, SyntaxKind.PublicKeyword)))));
+                        DeclareField(m.Type.ToString(), m.Name, SyntaxKind.PublicKeyword)
+                            .WithXmlComments(m)
+                        ))));
                 if(e.GenericParameters.Count > 0)
                 {
                     decl = decl.AddTypeParameterListParameters(e.GenericParameters.Select(TypeParameter).ToArray())
@@ -159,7 +162,7 @@ namespace MicroCom.CodeGenerator
                             .ToArray());
                 }
 
-                return decl;
+                return decl.WithXmlComments(e);
             }).ToArray());
         }
 
