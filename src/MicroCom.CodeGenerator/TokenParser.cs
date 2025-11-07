@@ -96,6 +96,7 @@ namespace MicroCom.CodeGenerator
 
         public List<string> GetAndClearPrecedingComments()
         {
+            SkipWhitespace();
             var rv = _pendingComments;
             _pendingComments = new List<string>();
             return rv;

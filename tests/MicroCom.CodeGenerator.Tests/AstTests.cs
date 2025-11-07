@@ -9,7 +9,11 @@ namespace MicroCom.CodeGenerator.Tests
         [Fact]
         public void ParsesStructComments()
         {
-            var idl = @"// struct comment\nstruct Foo {\n    // member comment\n    int Bar;\n}";
+            var idl = @"// struct comment
+struct Foo {
+    // member comment
+    int Bar;
+}";
             var ast = AstParser.Parse(idl);
             var foo = ast.Structs.Single();
             Assert.Contains("struct comment", foo.Comments);
@@ -20,18 +24,28 @@ namespace MicroCom.CodeGenerator.Tests
         [Fact]
         public void ParsesEnumComments()
         {
-            var idl = @"// enum comment\nenum E {\n    // member1 comment\n    A,\n    // member2 comment\n    B = 2\n}";
+            var idl = @"// enum comment
+enum E {
+    // member1 comment
+    A,
+    // member2 comment
+    B = 2
+}";
             var ast = AstParser.Parse(idl);
             var e = ast.Enums.Single();
             Assert.Contains("enum comment", e.Comments);
             Assert.Contains("member1 comment", e[0].Comments);
             Assert.Contains("member2 comment", e[1].Comments);
         }
-
         [Fact]
         public void ParsesInterfaceComments()
         {
-            var idl = @"// interface comment\ninterface IFoo {\n    // method comment\n    void Bar(// param comment\n             int baz);\n}";
+            var idl = @"// interface comment
+interface IFoo {
+    // method comment
+    void Bar(// param comment
+             int baz);
+}";
             var ast = AstParser.Parse(idl);
             var iface = ast.Interfaces.Single();
             Assert.Contains("interface comment", iface.Comments);
@@ -44,7 +58,11 @@ namespace MicroCom.CodeGenerator.Tests
         [Fact]
         public void ParsesMultiLineComments()
         {
-            var idl = @"/* struct comment */\nstruct Foo {\n    /* member comment */\n    int Bar;\n}";
+            var idl = @"/* struct comment */
+struct Foo {
+    /* member comment */
+    int Bar;
+}";
             var ast = AstParser.Parse(idl);
             var foo = ast.Structs.Single();
             Assert.Contains("struct comment", foo.Comments);
@@ -55,7 +73,13 @@ namespace MicroCom.CodeGenerator.Tests
         [Fact]
         public void ParsesMixedComments()
         {
-            var idl = @"// struct comment\n/* another struct comment */\nstruct Foo {\n    // member comment\n    /* another member comment */\n    int Bar;\n}";
+            var idl = @"// struct comment
+/* another struct comment */
+struct Foo {
+    // member comment
+    /* another member comment */
+    int Bar;
+}";
             var ast = AstParser.Parse(idl);
             var foo = ast.Structs.Single();
             Assert.Contains("struct comment", foo.Comments);
@@ -66,4 +90,3 @@ namespace MicroCom.CodeGenerator.Tests
         }
     }
 }
-

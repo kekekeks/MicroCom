@@ -9,29 +9,24 @@ namespace MicroCom.CodeGenerator
         {
             var parser = new TokenParser(source);
             var idl = new AstIdlNode { Attributes = ParseGlobalAttributes(ref parser) };
-            idl.Comments = parser.GetAndClearPrecedingComments();
             while (!parser.Eof)
             {
-                var comments = parser.GetAndClearPrecedingComments();
                 var attrs = ParseLocalAttributes(ref parser);
                 if (parser.TryConsume(";"))
                     continue;
                 if (parser.TryParseKeyword("enum"))
                 {
                     var node = ParseEnum(attrs, ref parser);
-                    node.Comments = comments;
                     idl.Enums.Add(node);
                 }
                 else if (parser.TryParseKeyword("struct"))
                 {
                     var node = ParseStruct(attrs, ref parser);
-                    node.Comments = comments;
                     idl.Structs.Add(node);
                 }
                 else if (parser.TryParseKeyword("interface"))
                 {
                     var node = ParseInterface(attrs, ref parser);
-                    node.Comments = comments;
                     idl.Interfaces.Add(node);
                 }
                 else
