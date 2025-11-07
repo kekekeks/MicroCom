@@ -30,7 +30,12 @@ namespace MicroCom.CodeGenerator
         }
     }
 
-    interface IAstNodeWithAttributes
+    interface IAstNodeWithComments
+    {
+        public List<string> Comments { get; set; }
+    }
+    
+    interface IAstNodeWithAttributes : IAstNodeWithComments
     {
         AstAttributes Attributes { get; set; }
     }
@@ -50,7 +55,7 @@ namespace MicroCom.CodeGenerator
         }
     }
 
-    class AstEnumMemberNode
+    class AstEnumMemberNode : IAstNodeWithComments
     {
         public string Name { get; set; }
         public string Value { get; set; }

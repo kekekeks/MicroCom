@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.CodeAnalysis;
 
 namespace MicroCom.CodeGenerator
 {
@@ -14,20 +15,44 @@ namespace MicroCom.CodeGenerator
         /// <returns>XDocument containing the parsed XML comments, or null if none found or invalid.</returns>
         public static XDocument ParseXmlComments(List<string> comments)
         {
-            if (comments == null || comments.Count == 0)
+            var xmlLines = ExtractXmlComments(comments);
+            if (xmlLines == null)
                 return null;
-            // Filter lines starting with '/'
-            var xmlLines = comments.Where(l => l.TrimStart().StartsWith("/")).ToList();
-            if (xmlLines.Count == 0)
-                return null;
-            // Remove leading '/' and whitespace
-            var xmlContent = string.Join("\n", xmlLines.Select(l => l.TrimStart().TrimStart('/').Trim()));
+
+            var xmlContent = string.Join("\n", xmlLines);
             // Wrap in a root node
             var wrapped = "<root>" + xmlContent + "</root>";
             var parsed = XDocument.Parse(wrapped);
             return parsed.Root.HasElements ? parsed : null;
 
         }
+
+        public static string ExtractXmlCommentsAsString(List<string> comments)
+        {
+            var xmlLines = ExtractXmlComments(comments);
+            if (xmlLines == null)
+                return null;
+            return string.Join("\n", xmlLines);
+        }
+        
+        /// <summary>
+        /// Extracts XML comment lines from a list of comment lines.
+        /// Lines starting with '/' are treated as XML comment lines.
+        /// </summary>
+        public static List<string> ExtractXmlComments(List<string> comments)
+        {
+            if (comments == null || comments.Count == 0)
+                return null;
+            // Filter lines starting with '/'
+            var xmlLines = comments.Where(l => l.TrimStart().StartsWith("/"))
+                
+                // Remove leading '/' and whitespace
+                .Select(l => l.TrimStart('/').Trim()).ToList();
+            if (xmlLines.Count == 0)
+                return null;
+            return xmlLines;
+        }
+        
 
         /// <summary>
         /// Converts XML comments (XDocument) into Doxygen comment format.

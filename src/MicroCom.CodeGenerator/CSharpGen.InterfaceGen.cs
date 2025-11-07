@@ -262,9 +262,6 @@ namespace MicroCom.CodeGenerator
             ref ClassDeclarationSyntax proxy, ref ClassDeclarationSyntax vtbl,
             List<StatementSyntax> vtblCtor, int num)
         {
-            // Prepare method information
-            if (member.Name == "GetRenderingDevice")
-                Console.WriteLine();
             var args = member.Select(ConvertArg).ToList();
             var returnArg = ConvertArg("__result", member.ReturnType);
             bool isHresult = member.ReturnType.Name == "HRESULT";
@@ -297,7 +294,8 @@ namespace MicroCom.CodeGenerator
                         (isHresultLastArgumentReturn ? args.SkipLast(1) : args).Select(a => (a.Name, a.ManagedType))) :
                     GenerateManagedSig(returnArg.ManagedType, member.Name, args.Select(a => (a.Name, a.ManagedType)));
 
-            iface = iface.AddMembers(managedSig.WithSemicolonToken(Semicolon()));
+            iface = iface.AddMembers(managedSig
+                .WithXmlComments(member).WithSemicolonToken(Semicolon()));
 
             // Prepare args for marshaling
             var preMarshal = new List<StatementSyntax>();
@@ -567,7 +565,7 @@ namespace MicroCom.CodeGenerator
                 .AddMembers(ParseMemberDeclaration("protected override int VTableSize => base.VTableSize + " +
                                                    iface.Count + ";"));
             
-            ns = ns.AddMembers(RewriteMethodsToProperties(ifaceDec));
+            ns = ns.AddMembers(RewriteMethodsToProperties(ifaceDec).WithXmlComments(iface));
             implNs = implNs.AddMembers(RewriteMethodsToProperties(proxy), RewriteMethodsToProperties(vtbl));
         }
     }
