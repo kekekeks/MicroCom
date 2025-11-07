@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -18,6 +19,20 @@ namespace MicroCom.CodeGenerator
             type.Name = name;
             return type.Format();
         }
+
+        static void AppendGenericParameters(StringBuilder sb, List<string> l)
+        {
+            if(l.Count == 0)
+                return;
+            sb.Append("template <");
+            for(var c = 0; c < l.Count; c++)
+            {
+                sb.Append("typename ").Append(l[c]);
+                if (c != l.Count - 1)
+                    sb.Append(", ");
+            }
+            sb.AppendLine(">");
+        }
         
         public static string GenerateCpp(AstIdlNode idl)
         {
@@ -27,7 +42,10 @@ namespace MicroCom.CodeGenerator
                 sb.AppendLine(preamble);
 
             foreach (var s in idl.Structs)
+            {
+                AppendGenericParameters(sb, s.GenericParameters);
                 sb.AppendLine("struct " + s.Name + ";");
+            }
             
             foreach (var s in idl.Interfaces)
                 sb.AppendLine("struct " + s.Name + ";");
@@ -52,6 +70,7 @@ namespace MicroCom.CodeGenerator
 
             foreach (var s in idl.Structs)
             {
+                AppendGenericParameters(sb, s.GenericParameters);
                 sb.Append("struct ").AppendLine(s.Name).AppendLine("{");
                 foreach (var m in s) 
                     sb.Append("    ").Append(ConvertType(m.Type)).Append(" ").Append(m.Name).AppendLine(";");

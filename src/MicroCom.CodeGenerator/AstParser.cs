@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace MicroCom.CodeGenerator
 {
@@ -151,11 +152,29 @@ namespace MicroCom.CodeGenerator
             return t;
         }
 
+        static List<string> ParseGenericParameters( ref TokenParser parser)
+        {
+            var l = new List<string>();
+            if (parser.TryConsume('<'))
+            {
+                do
+                {
+                    l.Add(parser.ParseIdentifier());
+                } while (parser.TryConsume(','));
+                if (!parser.TryConsume('>'))
+                    throw new ParseException("> expected", ref parser);
+            }
+            return l;
+
+        }
+
         static AstStructNode ParseStruct(AstAttributes attrs, ref TokenParser parser)
         {
             var name = parser.ParseIdentifier();
+            
+            var genericParams = ParseGenericParameters(ref parser);
             EnsureOpenBracket(ref parser);
-            var rv = new AstStructNode { Name = name, Attributes = attrs };
+            var rv = new AstStructNode { Name = name, Attributes = attrs, GenericParameters = genericParams};
             while (!parser.TryConsume('}') && !parser.Eof)
             {
                 var memberAttrs = ParseLocalAttributes(ref parser);
