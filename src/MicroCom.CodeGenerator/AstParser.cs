@@ -151,6 +151,15 @@ namespace MicroCom.CodeGenerator
         {
             var ident = parser.ParseIdentifier();
             var t = new AstTypeNode { Name = ident };
+            if (parser.TryConsume('<'))
+            {
+                do
+                {
+                    t.GenericArguments.Add(ParseType(ref parser));
+                } while (parser.TryConsume(','));
+                parser.SkipWhitespace();
+                parser.Consume('>');
+            }
             while (parser.TryConsume('*'))
                 t.PointerLevel++;
             if (parser.TryConsume("&"))

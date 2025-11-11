@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace MicroCom.CodeGenerator
 {
@@ -91,14 +92,45 @@ namespace MicroCom.CodeGenerator
         public string Name { get; set; }
         public int PointerLevel { get; set; }
         public bool IsLink { get; set; }
+        public List<AstTypeNode> GenericArguments { get; set; } = new List<AstTypeNode>();
 
-        public string Format() => Name + new string('*', PointerLevel)
-                                       + (IsLink ? "&" : "");
+        private void Format(StringBuilder sb)
+        {
+            sb.Append(Name);
+            if (GenericArguments.Count > 0)
+            {
+                sb.Append('<');
+                for (var c = 0; c < GenericArguments.Count; c++)
+                {
+                    var arg = GenericArguments[c];
+                    arg.Format(sb);
+                    if (c != GenericArguments.Count - 1)
+                        sb.Append(", ");
+                }
+
+                sb.Append('>');
+            }
+
+            sb.Append('*', PointerLevel);
+            if(IsLink)
+                sb.Append('&');
+        }
+        
+        public string Format()
+        {
+            var sb = new StringBuilder();
+            Format(sb);
+            return sb.ToString();
+        }
+
         public override string ToString() => Format();
-        public AstTypeNode Clone() => new AstTypeNode() { 
+
+        public AstTypeNode Clone() => new AstTypeNode()
+        {
             Name = Name,
             PointerLevel = PointerLevel,
-            IsLink = IsLink
+            IsLink = IsLink,
+            GenericArguments = GenericArguments.Select(a => a.Clone()).ToList()
         };
     }
 

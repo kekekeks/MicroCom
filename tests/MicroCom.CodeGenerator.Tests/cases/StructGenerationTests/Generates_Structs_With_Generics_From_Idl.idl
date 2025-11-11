@@ -8,5 +8,6 @@ struct Foo<T>
 struct NormalStruct
 {
     int a;
+    Foo<Foo<float*>**> b;
 }
 

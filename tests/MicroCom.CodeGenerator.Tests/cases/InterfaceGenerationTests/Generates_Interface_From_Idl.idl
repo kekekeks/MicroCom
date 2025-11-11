@@ -3,6 +3,10 @@
 [uuid(5b695a79-8357-498e-9fa0-e1ea3e47ab6b)]
 interface ISimpleInterface
 {
+    HRESULT GetValueHr([out, retval]int* rv);
+    void Generic(KeyValuePair<int, float> pair);
+    KeyValuePair<int, float>* GetGenericValue();
+    HRESULT GetGenericValueHr(KeyValuePair<int, float>* pair);
     void DoWork();
     int GetValue();
 }

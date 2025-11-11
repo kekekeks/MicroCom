@@ -121,10 +121,21 @@ namespace MicroCom.CodeGenerator
 
         class BypassArg : Arg
         {
-            public string Type { get; set; }
-            public int PointerLevel;
-            public override string ManagedType => Type + new string('*', PointerLevel);
-            public override string ReturnManagedType => Type + new string('*', PointerLevel - 1);
+            private readonly AstTypeNode _type;
+
+            public BypassArg(AstTypeNode type)
+            {
+                _type = type;
+                var clone = type.Clone();
+                ManagedType = clone.ToString();
+                if (clone.PointerLevel > 0)
+                    clone.PointerLevel--;
+                ReturnManagedType = clone.ToString();
+            }
+            //public string Type { get; set; }
+            //public int PointerLevel;
+            public override string ManagedType { get; }
+            public override string ReturnManagedType{ get; } //=> Type + new string('*', PointerLevel - 1);
 
             public override ExpressionSyntax Value(bool isHresultReturn)
             {
@@ -135,10 +146,11 @@ namespace MicroCom.CodeGenerator
 
             public override void PreMarshalForReturn(List<StatementSyntax> body)
             {
-                if (PointerLevel == 0)
+                if (_type.PointerLevel == 0)
                     base.PreMarshalForReturn(body);
                 else
-                    body.Add(ParseStatement(Type + new string('*', PointerLevel - 1) + " " + Name + "=default;"));
+                    body.Add(ParseStatement(ReturnManagedType + " " + Name + "=default;"));
+                    //body.Add(ParseStatement(Type + new string('*', PointerLevel - 1) + " " + Name + "=default;"));
             }
         }
 
@@ -228,6 +240,13 @@ namespace MicroCom.CodeGenerator
             return type;
         }
 
+        AstTypeNode ConvertNativeTypeNode(AstTypeNode node) => new AstTypeNode
+        {
+            Name = ConvertNativeType(node.Name), 
+            PointerLevel = node.PointerLevel,
+            GenericArguments = node.GenericArguments.Select(ConvertNativeTypeNode).ToList()
+        };
+
         Arg ConvertArg(AstInterfaceMemberArgumentNode node)
         {
             var arg = ConvertArg(node.Name, node.Type);
@@ -237,7 +256,7 @@ namespace MicroCom.CodeGenerator
         
         Arg ConvertArg(string name, AstTypeNode type)
         {
-            type = new AstTypeNode { Name = ConvertNativeType(type.Name), PointerLevel = type.PointerLevel };
+            type = ConvertNativeTypeNode(type);
 
             if (type.PointerLevel == 2)
             {
@@ -254,9 +273,9 @@ namespace MicroCom.CodeGenerator
                     return new WideStringArg { Name = name, NativeType = "byte*" };
             }
 
-            return new BypassArg
+            return new BypassArg(type)
             {
-                Name = name, Type = type.Name, PointerLevel = type.PointerLevel, NativeType = type.ToString()
+                Name = name, NativeType = type.ToString()
             };
         }
 
@@ -267,7 +286,7 @@ namespace MicroCom.CodeGenerator
         {
             var args = member.Select(ConvertArg).ToList();
             var returnArg = ConvertArg("__result", member.ReturnType);
-            bool isHresult = member.ReturnType.Name == "HRESULT";
+            bool isHresult = member.ReturnType.ToString() == "HRESULT";
             bool isHresultLastArgumentReturn = isHresult
                                                && args.Count > 0
                                                && (args.Last().Name == "ppv" 

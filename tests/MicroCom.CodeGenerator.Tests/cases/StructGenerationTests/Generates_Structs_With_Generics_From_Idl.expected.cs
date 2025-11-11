@@ -33,6 +33,7 @@ namespace Test
     public unsafe partial struct NormalStruct
     {
         public int a;
+        public Foo<Foo<float*>**> b;
     }
 }
 

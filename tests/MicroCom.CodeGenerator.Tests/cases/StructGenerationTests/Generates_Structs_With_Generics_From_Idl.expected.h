@@ -9,4 +9,5 @@ struct Foo
 struct NormalStruct
 {
     int a;
+    Foo<Foo<float*>**> b;
 };
