@@ -19,6 +19,8 @@ namespace MicroCom.CodeGenerator
         public string RuntimeNamespace = "MicroCom.Runtime";
         string RuntimeTypeName(string name) => "global::" + RuntimeNamespace + "." + name;
         string RuntimeTypeName() => RuntimeTypeName("MicroComRuntime");
+        public bool NullableEnable { get; set; }
+        
         public CSharpGen(AstIdlNode idl)
         {
             _idl = idl.Clone();
@@ -30,6 +32,7 @@ namespace MicroCom.CodeGenerator
             _extraUsings = _idl.Attributes.Where(u => u.Name == "clr-using").Select(u => u.Value).ToList();
             _namespace = _idl.GetAttribute("clr-namespace");
             RuntimeNamespace = _idl.GetAttributeOrDefault("clr-runtime-namespace") ?? RuntimeNamespace;
+            NullableEnable = _idl.GetAttributeOrDefault("clr-nullable-enable") == "true";
             var visibilityString = _idl.GetAttribute("clr-access");
 
             if (visibilityString == "internal")
@@ -115,7 +118,10 @@ namespace MicroCom.CodeGenerator
 
             var unit = Unit().AddMembers(ns, implNs);
 
-            return Format(unit);
+            var formatted = Format(unit);
+            if (NullableEnable)
+                formatted = "#nullable enable annotations\n" + formatted;
+            return formatted;
         }
 
         NamespaceDeclarationSyntax GenerateEnums(NamespaceDeclarationSyntax ns)

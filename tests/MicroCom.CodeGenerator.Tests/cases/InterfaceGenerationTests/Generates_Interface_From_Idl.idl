@@ -1,5 +1,11 @@
 @clr-namespace Test
 @clr-access internal
+
+struct Foo<T>
+{
+    T Value;
+}
+
 [uuid(5b695a79-8357-498e-9fa0-e1ea3e47ab6b)]
 interface ISimpleInterface
 {
@@ -9,5 +15,6 @@ interface ISimpleInterface
     HRESULT GetGenericValueHr(KeyValuePair<int, float>* pair);
     void DoWork();
     int GetValue();
+    void CustomStruct(Foo<int> foo);
 }
 

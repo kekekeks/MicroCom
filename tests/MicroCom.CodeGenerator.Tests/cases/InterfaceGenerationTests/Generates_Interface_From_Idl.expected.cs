@@ -22,6 +22,13 @@ using MicroCom.Runtime;
 
 namespace Test
 {
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    internal unsafe partial struct Foo<T>
+        where T : unmanaged
+    {
+        public T Value;
+    }
+
     internal unsafe partial interface ISimpleInterface : global::MicroCom.Runtime.IUnknown
     {
         int ValueHr
@@ -41,6 +48,8 @@ namespace Test
         {
             get;
         }
+
+        void CustomStruct(Foo<int> foo);
     }
 }
 
@@ -99,6 +108,11 @@ namespace Test.Impl
             }
         }
 
+        public void CustomStruct(Foo<int> foo)
+        {
+            ((delegate* unmanaged[Stdcall]<void*, Foo<int>, void>)(*PPV)[base.VTableSize + 6])(PPV, foo);
+        }
+
         [System.Runtime.CompilerServices.ModuleInitializer()]
         internal static void __MicroComModuleInit()
         {
@@ -109,7 +123,7 @@ namespace Test.Impl
         {
         }
 
-        protected override int VTableSize => base.VTableSize + 6;
+        protected override int VTableSize => base.VTableSize + 7;
     }
 
     unsafe class __MicroComISimpleInterfaceVTable : global::MicroCom.Runtime.MicroComVtblBase
@@ -267,6 +281,28 @@ namespace Test.Impl
             }
         }
 
+        [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.StdCall)]
+        delegate void CustomStructDelegate(void* @this, Foo<int> foo);
+#if NET5_0_OR_GREATER
+        [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })] 
+#endif
+        static void CustomStruct(void* @this, Foo<int> foo)
+        {
+            ISimpleInterface __target = null;
+            try
+            {
+                {
+                    __target = (ISimpleInterface)global::MicroCom.Runtime.MicroComRuntime.GetObjectFromCcw(new IntPtr(@this));
+                    __target.CustomStruct(foo);
+                }
+            }
+            catch (System.Exception __exception__)
+            {
+                global::MicroCom.Runtime.MicroComRuntime.UnhandledException(__target, __exception__);
+                ;
+            }
+        }
+
         protected __MicroComISimpleInterfaceVTable()
         {
 #if NET5_0_OR_GREATER
@@ -298,6 +334,11 @@ namespace Test.Impl
             base.AddMethod((delegate* unmanaged[Stdcall]<void*, int>)&GetValue); 
 #else
             base.AddMethod((GetValueDelegate)GetValue); 
+#endif
+#if NET5_0_OR_GREATER
+            base.AddMethod((delegate* unmanaged[Stdcall]<void*, Foo<int>, void>)&CustomStruct); 
+#else
+            base.AddMethod((CustomStructDelegate)CustomStruct); 
 #endif
         }
 

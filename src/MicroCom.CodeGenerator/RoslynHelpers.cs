@@ -13,7 +13,10 @@ namespace MicroCom.CodeGenerator
                 return node;
 
             var triviaList = new List<SyntaxTrivia>();
-            foreach (var comment in AstCommentHelper.ExtractXmlComments(src.Comments))
+            var extractedComments = AstCommentHelper.ExtractXmlComments(src.Comments);
+            if (extractedComments == null)
+                return node;
+            foreach (var comment in extractedComments)
             {
                 // Add as documentation comment (///)
                 triviaList.Add(SyntaxFactory.Comment("/// " + comment));

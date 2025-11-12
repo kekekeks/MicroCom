@@ -218,6 +218,8 @@ namespace MicroCom.CodeGenerator
     {
         protected virtual void VisitType(AstTypeNode type)
         {
+            foreach(var arg in type.GenericArguments)
+                VisitType(arg);
         }
         
         protected virtual void VisitArgument(AstInterfaceMemberArgumentNode argument)
