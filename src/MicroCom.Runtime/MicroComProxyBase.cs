@@ -25,6 +25,8 @@ namespace MicroCom.Runtime
 
         public MicroComProxyBase(IntPtr nativePointer, bool ownsHandle)
         {
+            if (nativePointer == IntPtr.Zero)
+                throw new ArgumentNullException();
             _nativePointer = nativePointer;
             _ownsHandle = ownsHandle;
             _synchronizationContext = SynchronizationContext.Current;
@@ -65,7 +67,7 @@ namespace MicroCom.Runtime
 
         protected virtual void Dispose(bool disposing)
         {
-            if(_nativePointer == null)
+            if(_nativePointer == IntPtr.Zero)
                 return;
             if (_ownsHandle)
             {
