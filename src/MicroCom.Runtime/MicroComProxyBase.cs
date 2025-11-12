@@ -41,9 +41,11 @@ namespace MicroCom.Runtime
             ((delegate* unmanaged[Stdcall]<void*, int>)(*PPV)[1])(PPV);
         }
 
-        public void Release()
+        public void Release() => Release(PPV);
+
+        void Release(void***ppv)
         {
-            ((delegate* unmanaged[Stdcall]<void*, int>)(*PPV)[2])(PPV);
+            ((delegate* unmanaged[Stdcall]<void*, int>)(*ppv)[2])(ppv);
         }
 
         public int QueryInterface(Guid guid, out IntPtr ppv)
@@ -64,18 +66,22 @@ namespace MicroCom.Runtime
         }
 
         public bool IsDisposed => _nativePointer == IntPtr.Zero;
-
-        protected virtual void Dispose(bool disposing)
+        
+        void Dispose(bool disposing)
         {
-            if(_nativePointer == IntPtr.Zero)
-                return;
-            if (_ownsHandle)
+            var ptr = Interlocked.Exchange(ref _nativePointer, IntPtr.Zero);
+            if (ptr != IntPtr.Zero)
             {
-                Release();
-                _ownsHandle = false;
+                if (_ownsHandle)
+                {
+                    if (ptr != IntPtr.Zero)
+                        Release((void***)ptr);
+                    _ownsHandle = false;
+                }
             }
-            _nativePointer = IntPtr.Zero;
-            GC.SuppressFinalize(this);
+
+            if (disposing)
+                GC.SuppressFinalize(this);
         }
         
         public void Dispose() => Dispose(true);
