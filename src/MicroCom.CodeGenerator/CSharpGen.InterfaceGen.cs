@@ -153,7 +153,7 @@ namespace MicroCom.CodeGenerator
                     //body.Add(ParseStatement(Type + new string('*', PointerLevel - 1) + " " + Name + "=default;"));
             }
         }
-
+        
         class StringArg : Arg
         {
             private string BName => "__bytemarshal_" + Name;
@@ -230,6 +230,38 @@ namespace MicroCom.CodeGenerator
                     $"({resultVar} == null ? null : (byte*)System.Runtime.InteropServices.Marshal.StringToHGlobalUni(" + resultVar + "))");
             }
         }
+        
+        class SpanArg : Arg
+        {
+            private readonly AstTypeNode _type;
+            private readonly AstTypeNode _elementType;
+
+            public SpanArg(AstTypeNode type)
+            {
+                _type = type;
+                _elementType = type.GenericArguments.Single();
+            }
+
+            public override string ManagedType => "Span<" + _elementType + ">";
+            private string FName => "__fixedmarshal_" + Name;
+            public override StatementSyntax CreateFixed(StatementSyntax inner)
+            {
+                return FixedStatement(DeclareVar(_elementType + "*", FName, ParseExpression(Name)), inner);
+            }
+
+            public override ExpressionSyntax BackMarshalValue()
+            {
+                return ParseExpression("new Span<" + _elementType + ">(" + Name + ".Data, " + Name + ".Length)");
+            }
+
+            public override ExpressionSyntax Value(bool isHresultReturn)
+            {
+                if (isHresultReturn)
+                    throw new NotSupportedException();
+
+                return ParseExpression("new " + _type + " { Data = " + FName +", Length = " + Name + ".Length }");
+            }
+        }
 
         string ConvertNativeType(string type)
         {
@@ -271,6 +303,10 @@ namespace MicroCom.CodeGenerator
                     return new StringArg { Name = name, NativeType = "byte*" };
                 if (type.Name == "char16_t" || type.Name == "WCHAR")
                     return new WideStringArg { Name = name, NativeType = "byte*" };
+            }
+            else if(type.PointerLevel == 0 && SpanLikes.Contains(type.Name))
+            {
+                return new SpanArg(type) { Name = name, NativeType = type.ToString()};
             }
 
             return new BypassArg(type)
@@ -355,6 +391,7 @@ namespace MicroCom.CodeGenerator
 
             // Wrap call into fixed() blocks
             StatementSyntax callStatement = ExpressionStatement(callExpr);
+            
             foreach (var arg in args)
                 callStatement = arg.CreateFixed(callStatement);
 

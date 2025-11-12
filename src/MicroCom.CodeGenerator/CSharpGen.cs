@@ -20,6 +20,7 @@ namespace MicroCom.CodeGenerator
         string RuntimeTypeName(string name) => "global::" + RuntimeNamespace + "." + name;
         string RuntimeTypeName() => RuntimeTypeName("MicroComRuntime");
         public bool NullableEnable { get; set; }
+        public HashSet<string> SpanLikes { get; set; } = new HashSet<string>();
         
         public CSharpGen(AstIdlNode idl)
         {
@@ -34,6 +35,7 @@ namespace MicroCom.CodeGenerator
             RuntimeNamespace = _idl.GetAttributeOrDefault("clr-runtime-namespace") ?? RuntimeNamespace;
             NullableEnable = _idl.GetAttributeOrDefault("clr-nullable-enable") == "true";
             var visibilityString = _idl.GetAttribute("clr-access");
+            SpanLikes = new HashSet<string>(_idl.Attributes.Where(a => a.Name == "clr-span-like").Select(a => a.Value));
 
             if (visibilityString == "internal")
                 _visibility = SyntaxKind.InternalKeyword;
