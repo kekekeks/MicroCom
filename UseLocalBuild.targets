@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <MicroComIsUsingLocalBuild>true</MicroComIsUsingLocalBuild>
+    <MicroComLocalBuildRoot>$(MSBuildThisFileDirectory)</MicroComLocalBuildRoot>
+    <UseMicroCom Condition="'$(UseMicroComGeneratorMSBuild)' == 'true' or '$(UseMicroComGeneratorRoslyn)' == 'true'">true</UseMicroCom>
+  </PropertyGroup>
+
+  <!-- MicroCom Runtime -->
+  <ItemGroup Condition="'$(UseMicroCom)' == 'true'">
+    <Reference Include="MicroCom.Runtime">
+      <HintPath>$(MicroComLocalBuildRoot)src\MicroCom.Runtime\bin\Debug\netstandard2.0\MicroCom.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- MicroCom CodeGenerator (core library) -->
+  <ItemGroup Condition="'$(UseMicroComGenerator)' == 'true'">
+    <Reference Include="MicroCom.CodeGenerator">
+      <HintPath>$(MicroComLocalBuildRoot)src\MicroCom.CodeGenerator\bin\Debug\netstandard2.0\MicroCom.CodeGenerator.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- MicroCom CodeGenerator MSBuild -->
+  <PropertyGroup Condition="'$(UseMicroComGeneratorMSBuild)' == 'true'">
+    <MicroComGeneratorMSBuildDll>$(MicroComLocalBuildRoot)src\MicroCom.CodeGenerator.MSBuild\bin\Debug\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll</MicroComGeneratorMSBuildDll>
+  </PropertyGroup>
+  <Import Condition="'$(UseMicroComGeneratorMSBuild)' == 'true'"
+          Project="$(MicroComLocalBuildRoot)src\MicroCom.CodeGenerator.MSBuild\MicroCom.CodeGenerator.MSBuild.props" />
+  <Import Condition="'$(UseMicroComGeneratorMSBuild)' == 'true'"
+          Project="$(MicroComLocalBuildRoot)src\MicroCom.CodeGenerator.MSBuild\MicroCom.CodeGenerator.MSBuild.targets" />
+
+  <!-- MicroCom CodeGenerator Roslyn (Source Generator) -->
+  <ItemGroup Condition="'$(UseMicroComGeneratorRoslyn)' == 'true'">
+    <Analyzer Include="$(MicroComLocalBuildRoot)src\MicroCom.CodeGenerator.Roslyn\bin\Debug\netstandard2.0\MicroCom.CodeGenerator.Roslyn.dll" />
+  </ItemGroup>
+</Project>

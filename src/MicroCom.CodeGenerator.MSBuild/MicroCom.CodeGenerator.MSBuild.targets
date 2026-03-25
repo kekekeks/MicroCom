@@ -1,10 +1,15 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <UsingTask TaskName="MicroComCodeGeneratorTask"  AssemblyFile="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll" />
+  <PropertyGroup>
+    <MicroComGeneratorMSBuildDll Condition="'$(MicroComGeneratorMSBuildDll)' == ''">$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll</MicroComGeneratorMSBuildDll>
+  </PropertyGroup>
+  <UsingTask Condition="'$(MicroComIsUsingLocalBuild)' != 'true'" TaskName="MicroComCodeGeneratorTask"  AssemblyFile="$(MicroComGeneratorMSBuildDll)" />
+  <UsingTask Condition="'$(MicroComIsUsingLocalBuild)' == 'true'" TaskName="MicroComCodeGeneratorTask"  
+             AssemblyFile="$(MicroComGeneratorMSBuildDll)" TaskFactory="TaskHostFactory" />
 
   <Target Name="_GenerateMicroComItemsDependencyCache" BeforeTargets="GenerateMicroComItems">
     <MakeDir Directories="$(IntermediateOutputPath)/MicroCom.Generator.MSBuild" />
     <ItemGroup>
-      <CustomAdditionalGenerateMicroComItemsInputs Include="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll"/>
+      <CustomAdditionalGenerateMicroComItemsInputs Include="$(MicroComGeneratorMSBuildDll)"/>
     </ItemGroup>
 
     <Hash ItemsToHash="@(MicroComIdl);@(CustomAdditionalGenerateMicroComItemsInputs);$(MSBuildAllProjects)">
@@ -44,6 +49,6 @@
   
   <ItemGroup>
     <UpToDateCheckInput Include="@(MicroComIdl)"/>
-    <UpToDateCheckInput Include="$(MSBuildThisFileDirectory)\..\tools\netstandard2.0\MicroCom.CodeGenerator.MSBuild.dll"/>
+    <UpToDateCheckInput Include="$(MicroComGeneratorMSBuildDll)"/>
   </ItemGroup>
 </Project>
