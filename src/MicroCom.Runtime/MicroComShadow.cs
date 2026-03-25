@@ -8,10 +8,14 @@ namespace MicroCom.Runtime
     public unsafe class MicroComShadow : IDisposable
     {
         private readonly object _lock = new object();
+        internal object SyncRoot => _lock;
         private readonly Dictionary<Type, IntPtr> _shadows = new Dictionary<Type, IntPtr>();
         private readonly Dictionary<IntPtr, Type> _backShadows = new Dictionary<IntPtr, Type>();
         private GCHandle? _handle;
-        private volatile int _refCount;
+        // This doesn't include references from C# codegen
+        private volatile int _nativeRefCount;
+        private volatile int _totalRefCount;
+        private bool _referencedFromNative;
         internal IMicroComShadowContainer Target { get; }
         internal MicroComShadow(IMicroComShadowContainer target)
         {
@@ -25,7 +29,7 @@ namespace MicroCom.Runtime
                 return QueryInterface(type, ppv);
             else if (*guid == MicroComRuntime.ManagedObjectInterfaceGuid)
             {
-                ccw->RefCount++;
+                Interlocked.Increment(ref _totalRefCount);
                 *ppv = ccw;
                 return 0;
             }
@@ -62,11 +66,13 @@ namespace MicroCom.Runtime
                     var intPtr = Marshal.AllocHGlobal(Marshal.SizeOf<Ccw>());
                     var targetCcw = (Ccw*)intPtr;
                     *targetCcw = default;
-                    targetCcw->RefCount = 0;
                     targetCcw->VTable = vtable;
                     if (_handle == null)
                         _handle = GCHandle.Alloc(this);
                     targetCcw->GcShadowHandle = GCHandle.ToIntPtr(_handle.Value);
+#if LOG_CCW_CALLS
+                    targetCcw->Guid = MicroComRuntime.GetGuidFor(type);
+#endif
                     _shadows[type] = intPtr;
                     _backShadows[intPtr] = type;
                     *ppv = targetCcw;
@@ -76,59 +82,82 @@ namespace MicroCom.Runtime
             }
         }
 
+        /// <summary>
+        /// This doesn't trigger ReferencedFromNative
+        /// </summary>
+        internal void AddTransientCallRef()
+        {
+            Interlocked.Increment(ref _totalRefCount);
+        }
+        
+        internal void RemoveTransientCallRef()
+        {
+            var cnt = Interlocked.Decrement(ref _totalRefCount);
+            if (cnt == 0)
+                FreeCcws();
+        }
+
         internal int AddRef(Ccw* ccw)
         {
-            if (Interlocked.Increment(ref _refCount) == 1)
+            var count = Interlocked.Increment(ref _totalRefCount);
+            if (Interlocked.Increment(ref _nativeRefCount) == 1)
             {
-                try
+                lock (_lock)
                 {
-                    Target.OnReferencedFromNative();
-                }
-                catch (Exception e)
-                {
-                    MicroComRuntime.UnhandledException(Target, e);
-                }
-            }
-            
-            return Interlocked.Increment(ref ccw->RefCount);
-        }
-
-        internal int Release(Ccw* ccw)
-        {
-            Interlocked.Decrement(ref _refCount);
-            var cnt = Interlocked.Decrement(ref ccw->RefCount);
-            if (cnt == 0)
-                return FreeCcw(ccw);
-
-            return cnt;
-        }
-
-        int FreeCcw(Ccw* ccw)
-        {
-            lock (_lock)
-            {
-                // Shadow got resurrected by a call to QueryInterface from another thread
-                if (ccw->RefCount != 0)
-                    return ccw->RefCount;
-                    
-                var intPtr = new IntPtr(ccw);
-                var type = _backShadows[intPtr];
-                _backShadows.Remove(intPtr);
-                _shadows.Remove(type);
-                Marshal.FreeHGlobal(intPtr);
-                if (_shadows.Count == 0)
-                {
-                    _handle?.Free();
-                    _handle = null;
                     try
                     {
-                        Target.OnUnreferencedFromNative();
+                        _referencedFromNative = true;
+                        Target.OnReferencedFromNative();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         MicroComRuntime.UnhandledException(Target, e);
                     }
                 }
+            }
+
+            return count;
+        }
+
+        internal int Release(Ccw* ccw)
+        {
+            Interlocked.Decrement(ref _nativeRefCount);
+            var cnt = Interlocked.Decrement(ref _totalRefCount);
+            if (cnt == 0)
+                return FreeCcws();
+
+            return cnt;
+        }
+
+        int FreeCcws()
+        {
+            lock (_lock)
+            {
+                // Shadow somehow got resurrected (i. e. we've passed this object to native code from a different thread
+                // or Dispose called from managed code when there are native references 
+                if (_totalRefCount != 0)
+                    return _totalRefCount;
+
+                foreach (var shadow in _shadows) 
+                    Marshal.FreeHGlobal(shadow.Value);
+                _shadows.Clear();
+                _backShadows.Clear();
+                
+                _handle?.Free();
+                _handle = null;
+                try
+                {
+                    if (_referencedFromNative)
+                    {
+                        _referencedFromNative = false;
+                        Target.OnUnreferencedFromNative();
+                    }
+                }
+                catch(Exception e)
+                {
+                    MicroComRuntime.UnhandledException(Target, e);
+                }
+                
             }
 
             return 0;
@@ -137,32 +166,13 @@ namespace MicroCom.Runtime
         /*
          Needs to be called to support the following scenario:
          1) Object created
-         2) Object passed to native code, shadow is created, CCW is created
+         2) Non-owning GetNativePointer obtained, shadow is created, CCW is created
          3) Native side has never called AddRef
          
          In that case the GC handle to the shadow object is still alive
          */
         
-        public void Dispose()
-        {
-            lock (_lock)
-            {
-                List<IntPtr> toRemove = null;
-                foreach (var kv in _backShadows)
-                {
-                    var ccw = (Ccw*)kv.Key;
-                    if (ccw->RefCount == 0)
-                    {
-                        toRemove ??= new List<IntPtr>();
-                        toRemove.Add(kv.Key);
-                    }
-                }
-
-                if(toRemove != null)
-                    foreach (var intPtr in toRemove)
-                        FreeCcw((Ccw*)intPtr);
-            }
-        }
+        public void Dispose() => FreeCcws();
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -170,7 +180,9 @@ namespace MicroCom.Runtime
     {
         public IntPtr VTable;
         public IntPtr GcShadowHandle;
-        public volatile int RefCount;
+        #if LOG_CCW_CALLS
+        public Guid Guid;
+        #endif
         public MicroComShadow GetShadow() => (MicroComShadow)GCHandle.FromIntPtr(GcShadowHandle).Target;
     }
 }

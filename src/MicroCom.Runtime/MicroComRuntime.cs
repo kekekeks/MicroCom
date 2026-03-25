@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace MicroCom.Runtime
 {
@@ -70,17 +71,88 @@ namespace MicroCom.Runtime
             {
                 container.Shadow ??= new MicroComShadow(container);
                 void* ptr = null;
-                var res = container.Shadow.GetOrCreateNativePointer(typeof(T), &ptr);
-                if (res != 0)
-                    throw new COMException(
-                        "Unable to create native callable wrapper for type " + typeof(T) + " for instance of type " +
-                        obj.GetType(),
-                        res);
-                if (owned)
-                    container.Shadow.AddRef((Ccw*)ptr);
-                return ptr;
+                lock (container.Shadow.SyncRoot)
+                {
+                    var res = container.Shadow.GetOrCreateNativePointer(typeof(T), &ptr);
+                    if (res != 0)
+                        throw new COMException(
+                            "Unable to create native callable wrapper for type " + typeof(T) +
+                            " for instance of type " +
+                            obj.GetType(),
+                            res);
+                    if (owned)
+                    {
+#if LOG_CCW_CALLS
+                        Console.WriteLine($"GetNativePointer(owned): {DebugHelpers.PrettyPrintCcw((Ccw*)ptr)}");
+#endif
+                        container.Shadow.AddRef((Ccw*)ptr);
+                    }
+
+                    return ptr;
+                }
             }
             throw new ArgumentException("Unable to get a native pointer for " + obj);
+        }
+
+        public static LeasedNativePointerForCall LeaseNativePointerForCall<T>(T obj) where T : IUnknown
+        {
+            if (obj == null)
+                return default;
+            if (obj is MicroComProxyBase proxy)
+            {
+                proxy.AddRef();
+                return new(proxy.NativePointer, null);
+            }
+
+            if (obj is IMicroComShadowContainer container)
+            {
+                container.Shadow ??= new MicroComShadow(container);
+                void* ptr = null;
+                lock (container.Shadow.SyncRoot)
+                {
+                    var res = container.Shadow.GetOrCreateNativePointer(typeof(T), &ptr);
+                    if (res != 0)
+                        throw new COMException(
+                            "Unable to create native callable wrapper for type " + typeof(T) +
+                            " for instance of type " +
+                            obj.GetType(),
+                            res);
+                    container.Shadow.AddTransientCallRef();
+                    return new LeasedNativePointerForCall((IntPtr)ptr, container.Shadow);
+                }
+            }
+            throw new ArgumentException("Unable to get a native pointer for " + obj);
+        }
+
+        public struct LeasedNativePointerForCall : IDisposable
+        {
+            private IntPtr _pointer;
+            private MicroComShadow? _shadow;
+
+            internal LeasedNativePointerForCall(IntPtr pointer, MicroComShadow? shadow)
+            {
+                _pointer = (IntPtr)pointer;
+                _shadow = shadow;
+            }
+
+            public IntPtr IntPtr => _pointer;
+            public void* Pointer => (void*)_pointer;
+            public void Dispose()
+            {
+                var pointer = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
+                var shadow = Interlocked.Exchange(ref _shadow, null);
+                if (pointer == IntPtr.Zero)
+                    return;
+                if (shadow != null)
+                    shadow.RemoveTransientCallRef();
+                else
+                    MicroComProxyBase.Release((void***)pointer);
+            }
+
+            public override string ToString()
+            {
+                return $"{IntPtr.ToString("X16")} (managed: {_shadow != null})";
+            }
         }
 
         public static object GetObjectFromCcw(IntPtr ccw)

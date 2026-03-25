@@ -46,18 +46,42 @@ namespace MicroCom.Runtime
                 ptr[c] = _methods[c];
             return new IntPtr(ptr);
         }
-
+        
 #if NET5_0_OR_GREATER
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
 #endif
-        static int QueryInterface(Ccw* ccw, Guid* guid, void** ppv) => ccw->GetShadow().QueryInterface(ccw, guid, ppv);
+        static int QueryInterface(Ccw* ccw, Guid* guid, void** ppv)
+        {
+            #if LOG_CCW_CALLS
+            Console.WriteLine($"QueryInterface: {DebugHelpers.PrettyPrintGuid(*guid)} from {DebugHelpers.PrettyPrintCcw(ccw)}");
+            #endif
+            var rv = ccw->GetShadow().QueryInterface(ccw, guid, ppv);
+            if (rv != 0)
+                *ppv = null;
+            #if LOG_CCW_CALLS
+            Console.WriteLine($"QueryInterface return: {rv}, {DebugHelpers.PrettyPrintCcw((Ccw*)*ppv)}");
+            #endif
+            return rv;
+        }
 #if NET5_0_OR_GREATER
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
 #endif
-        static int AddRef(Ccw* ccw) => ccw->GetShadow().AddRef(ccw);
+        static int AddRef(Ccw* ccw)
+        {
+#if LOG_CCW_CALLS
+            Console.WriteLine($"AddRef: {DebugHelpers.PrettyPrintCcw(ccw)}\"");
+#endif
+            return ccw->GetShadow().AddRef(ccw);
+        }
 #if NET5_0_OR_GREATER
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
 #endif
-        static int Release(Ccw* ccw) => ccw->GetShadow().Release(ccw);
+        static int Release(Ccw* ccw)
+        {
+#if LOG_CCW_CALLS
+            Console.WriteLine($"Release: {DebugHelpers.PrettyPrintCcw(ccw)}\"");
+#endif
+            return ccw->GetShadow().Release(ccw);
+        }
     }
 }

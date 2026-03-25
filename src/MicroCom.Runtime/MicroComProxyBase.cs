@@ -36,14 +36,16 @@ namespace MicroCom.Runtime
 
         protected virtual int VTableSize => 3;
         
-        public void AddRef()
+        public void AddRef() => AddRef(PPV);
+
+        internal static void AddRef(void*** ppv)
         {
-            ((delegate* unmanaged[Stdcall]<void*, int>)(*PPV)[1])(PPV);
+            ((delegate* unmanaged[Stdcall]<void*, int>)(*ppv)[1])(ppv);
         }
 
         public void Release() => Release(PPV);
 
-        void Release(void***ppv)
+        internal static void Release(void***ppv)
         {
             ((delegate* unmanaged[Stdcall]<void*, int>)(*ppv)[2])(ppv);
         }

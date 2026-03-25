@@ -96,7 +96,14 @@ namespace MicroCom.CodeGenerator
             public string InterfaceType;
 
             public override ExpressionSyntax Value(bool isHresultReturn) =>
-                ParseExpression(_gen.RuntimeTypeName() + ".GetNativePointer(" + Name + ")");
+                ParseExpression($"__{Name}.Pointer");
+
+            public override void PreMarshal(List<StatementSyntax> body)
+            {
+                body.Add(ParseStatement(
+                    $"using var __{Name} = {_gen.RuntimeTypeName()}.LeaseNativePointerForCall({Name});"));
+                base.PreMarshal(body);
+            }
 
             public override string ManagedType =>
                 Attributes != null && Attributes.HasAttribute("nullable") ? InterfaceType + "?" : InterfaceType;
