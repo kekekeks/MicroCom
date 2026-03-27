@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,11 +9,14 @@ namespace MicroCom.Runtime
     public unsafe class MicroComVtblBase
     {
         private List<IntPtr> _methods = new List<IntPtr>();
+        
+#if !NET5_0_OR_GREATER
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int AddRefDelegate(Ccw* ccw);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int QueryInterfaceDelegate(Ccw* ccw, Guid* guid, void** ppv);
+#endif
 
         public static IntPtr Vtable { get; } = new MicroComVtblBase().CreateVTable();
         public MicroComVtblBase()
@@ -28,15 +32,20 @@ namespace MicroCom.Runtime
 #endif
         }
 
-        protected void AddMethod(Delegate d)
-        {
-            GCHandle.Alloc(d);
-            _methods.Add(Marshal.GetFunctionPointerForDelegate(d));
-        }
-        
+#if NET5_0_OR_GREATER
         protected void AddMethod(void* m)
         {
             _methods.Add(new IntPtr(m));
+        }
+#endif
+
+#if NET8_0_OR_GREATER
+        [RequiresDynamicCode("Marshaling delegates to function pointers requires dynamic code generation")]
+#endif
+        protected void AddMethod<TDelegate>(TDelegate d)
+        {
+            GCHandle.Alloc(d);
+            _methods.Add(Marshal.GetFunctionPointerForDelegate(d));
         }
 
         protected unsafe IntPtr CreateVTable()

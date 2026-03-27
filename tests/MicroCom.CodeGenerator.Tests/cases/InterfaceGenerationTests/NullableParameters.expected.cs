@@ -43,7 +43,9 @@ namespace TestNamespace.Impl
     {
         public void Bar(IFoo? foo, IBar bar, int x)
         {
-            ((delegate* unmanaged[Stdcall]<void*, void*, void*, int, void>)(*PPV)[base.VTableSize + 0])(PPV, global::MicroCom.Runtime.MicroComRuntime.GetNativePointer(foo), global::MicroCom.Runtime.MicroComRuntime.GetNativePointer(bar), x);
+            using var __foo = global::MicroCom.Runtime.MicroComRuntime.LeaseNativePointerForCall(foo);
+            using var __bar = global::MicroCom.Runtime.MicroComRuntime.LeaseNativePointerForCall(bar);
+            ((delegate* unmanaged[Stdcall]<void*, void*, void*, int, void>)(*PPV)[base.VTableSize + 0])(PPV, __foo.Pointer, __bar.Pointer, x);
         }
 
         public IBar? TryGetBar()
