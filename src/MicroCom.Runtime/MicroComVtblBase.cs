@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -36,13 +37,16 @@ namespace MicroCom.Runtime
         {
             _methods.Add(new IntPtr(m));
         }
-#else
+#endif
+
+#if NET8_0_OR_GREATER
+        [RequiresDynamicCode("Marshaling delegates to function pointers requires dynamic code generation")]
+#endif
         protected void AddMethod<TDelegate>(TDelegate d)
         {
             GCHandle.Alloc(d);
             _methods.Add(Marshal.GetFunctionPointerForDelegate(d));
         }
-#endif 
 
         protected unsafe IntPtr CreateVTable()
         {
