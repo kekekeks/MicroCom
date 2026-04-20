@@ -3,7 +3,6 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <IncludeBuildOutput>false</IncludeBuildOutput>
-        <LangVersion>8</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,4 +15,10 @@
         <Compile Remove="../MicroCom.CodeGenerator/CSharpGen.Format.cs"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include="*.props">
+            <Pack>true</Pack>
+            <PackagePath>build\;buildTransitive\;buildMultiTargeting\</PackagePath>
+        </Content>
+    </ItemGroup>
 </Project>

@@ -5,26 +5,40 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace MicroCom.CodeGenerator.Roslyn
 {
-
     [Generator]
     public class MicroComGenerator : IIncrementalGenerator
     {
+        private const string IsMicroComIdlMetadata = "build_metadata.AdditionalFiles.IsMicroComIdl";
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var files = context.AdditionalTextsProvider.Where(t => t.Path.ToLowerInvariant().EndsWith(".mcidl"))
+            var files = context.AdditionalTextsProvider
+                .Combine(context.AnalyzerConfigOptionsProvider)
+                .Where(t =>
+                {
+                    var (file, optionsProvider) = t;
+
+                    if (optionsProvider.GetOptions(file).TryGetValue(IsMicroComIdlMetadata, out var isMicroComIdl)
+                        && bool.TryParse(isMicroComIdl, out var isIdl) && isIdl)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
                 .Select((t, c) => new
                 {
-                    path = t.Path,
-                    text = t.GetText(c)?.ToString()
+                    path = t.Left.Path,
+                    text = t.Left.GetText(c)?.ToString()
                 });
-            
+
             context.RegisterSourceOutput(files, (ctx, file) =>
             {
                 try
                 {
                     var idl = MicroComCodeGenerator.Parse(file.text);
                     var source = idl.GenerateCSharpInterop();
-                    ctx.AddSource(Path.GetFileNameWithoutExtension(file.path), source);
+                    ctx.AddSource(Path.GetFileNameWithoutExtension(file.path) + ".g.cs", source);
                 }
                 catch (ParseException pe)
                 {

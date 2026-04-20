@@ -1,0 +1,13 @@
+<Project>
+    <ItemGroup>
+        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IsMicroComIdl" />
+    </ItemGroup>
+
+    <Target Name="_InjectMicroComAdditionalFiles" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+        <ItemGroup>
+            <AdditionalFiles Include="@(MicroComIdl)"
+                             SourceItemGroup="MicroComIdl"
+                             IsMicroComIdl="true" />
+        </ItemGroup>
+    </Target>
+</Project>
