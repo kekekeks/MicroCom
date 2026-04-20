@@ -15,4 +15,10 @@
         <Compile Remove="../MicroCom.CodeGenerator/CSharpGen.Format.cs"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include="*.props">
+            <Pack>true</Pack>
+            <PackagePath>build\;buildTransitive\;buildMultiTargeting\</PackagePath>
+        </Content>
+    </ItemGroup>
 </Project>
