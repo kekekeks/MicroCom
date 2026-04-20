@@ -24,7 +24,7 @@ namespace MicroCom.CodeGenerator.Roslyn
                 {
                     var idl = MicroComCodeGenerator.Parse(file.text);
                     var source = idl.GenerateCSharpInterop();
-                    ctx.AddSource(Path.GetFileNameWithoutExtension(file.path), source);
+                    ctx.AddSource(Path.GetFileNameWithoutExtension(file.path) + ".g.cs", source);
                 }
                 catch (ParseException pe)
                 {
