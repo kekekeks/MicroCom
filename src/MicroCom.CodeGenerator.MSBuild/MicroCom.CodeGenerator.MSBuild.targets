@@ -32,8 +32,7 @@
           Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
     <MicroComCodeGeneratorTask
             RuntimeNamespace="$(MicroComGeneratorRuntimeNamespace)"
-            Inputs="@(MicroComIdl)"
-            AdditionalInputs="@(CustomAdditionalGenerateMicroComItemsInputs)"/>
+            Inputs="@(MicroComIdl)"/>
   </Target>
   
   <Target Name="UpdateMicroComCompileItems" DependsOnTargets="GenerateMicroComItems" BeforeTargets="CoreCompile">

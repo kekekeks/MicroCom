@@ -19,23 +19,6 @@ namespace MicroCom.CodeGenerator.MSBuild
 
         public bool Execute()
         {
-            // Outputs get the latest input timestamp, so the incremental build sees them as up to date
-            DateTime GetTimestamp(ITaskItem idlItem)
-            {
-                var rv = File.GetLastWriteTime(idlItem.ItemSpec);
-                foreach (var additional in AdditionalInputs ?? Array.Empty<ITaskItem>())
-                {
-                    if (File.Exists(additional.ItemSpec))
-                    {
-                        var time = File.GetLastWriteTime(additional.ItemSpec);
-                        if (time > rv)
-                            rv = time;
-                    }
-                }
-
-                return rv;
-            }
-
             foreach (var i in Inputs)
             {
                 try
@@ -52,7 +35,6 @@ namespace MicroCom.CodeGenerator.MSBuild
                             SmartPointerWrappers = smartPointerWrappers,
                             SmartPointerType = i.GetMetadata("CppSmartPointerType")
                         }));
-                        File.SetLastWriteTime(cppOutput, GetTimestamp(i));
                     }
 
                     var interopPath = i.GetMetadata("CSharpInteropPath");
@@ -64,7 +46,6 @@ namespace MicroCom.CodeGenerator.MSBuild
                             RuntimeNamespace = RuntimeNamespace,
                         }.Generate();
                         WriteOutput(interopPath, output);
-                        File.SetLastWriteTime(interopPath, GetTimestamp(i));
                     }
                 }
                 catch (ParseException e)
@@ -100,8 +81,6 @@ namespace MicroCom.CodeGenerator.MSBuild
 
         [Required]
         public string RuntimeNamespace { get; set; }
-
-        public ITaskItem[] AdditionalInputs { get; set; }
         public IBuildEngine BuildEngine { get; set; }
         public ITaskHost HostObject { get; set; }
     }
