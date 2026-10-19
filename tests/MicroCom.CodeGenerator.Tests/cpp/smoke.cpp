@@ -6,8 +6,15 @@
 #include "Non_Virtual_Inherits_Flattens_Adapters.h"
 #include "Wraps_Returns_And_Out_Params.h"
 
+static int g_preambleCalls = 0;
+#define CALL_PREAMBLE g_preambleCalls++
+#define CALL_PREAMBLE_SECOND_LINE (void)0
+#include "Call_Preamble_And_Retention.h"
+
 static int g_failures = 0;
 static int g_live = 0;
+static bool g_inCall = false;
+static int g_destroyedInCall = 0;
 
 #define CHECK(cond) do { if (!(cond)) { printf("%s:%d: CHECK failed: %s\n", __FILE__, __LINE__, #cond); g_failures++; } } while (0)
 
@@ -16,7 +23,12 @@ class ComObject : public virtual IUnknown
     ULONG _rc = 1;
 public:
     ComObject() { g_live++; }
-    virtual ~ComObject() { g_live--; }
+    virtual ~ComObject()
+    {
+        g_live--;
+        if (g_inCall)
+            g_destroyedInCall++;
+    }
     ULONG AddRef() override { return ++_rc; }
     ULONG Release() override
     {
@@ -81,7 +93,7 @@ public:
     HRESULT SetTitle(int value) override { return 1000 + value; }
     HRESULT GetName(ComPtr<IAvnString>& ppv) override
     {
-        ppv._microcom_attach(new StringImpl(4));
+        ppv._microcom_attach(new StringImpl(4), true);
         return S_OK;
     }
 };
@@ -93,7 +105,7 @@ public:
     ComPtr<IAvnString> GetText() override
     {
         ComPtr<IAvnString> rv;
-        rv._microcom_attach(new StringImpl(6));
+        rv._microcom_attach(new StringImpl(6), true);
         return rv;
     }
 };
@@ -191,12 +203,12 @@ public:
     ComPtr<IImage> Clone() override
     {
         ComPtr<IImage> rv;
-        rv._microcom_attach(static_cast<MicroComImpl<IImage>*>(new BitmapImpl()));
+        rv._microcom_attach(static_cast<MicroComImpl<IImage>*>(new BitmapImpl()), true);
         return rv;
     }
     HRESULT Lock(ComPtr<ILock>& ppv) override
     {
-        ppv._microcom_attach(Make<ILock, LockImpl>());
+        ppv._microcom_attach(Make<ILock, LockImpl>(), true);
         return S_OK;
     }
 };
@@ -260,7 +272,7 @@ public:
 static ComPtr<IFoo> NewFoo(int value)
 {
     ComPtr<IFoo> rv;
-    rv._microcom_attach(new FooImpl(value));
+    rv._microcom_attach(new FooImpl(value), true);
     return rv;
 }
 
@@ -271,23 +283,23 @@ public:
     ComPtr<IFoo> GetFoo(int index) override { return NewFoo(index); }
     HRESULT CreateFoo(const char* name, ComPtr<IFoo>& ppv) override
     {
-        ppv._microcom_attach(NewFoo((int)strlen(name))._microcom_detach());
+        ppv._microcom_attach(NewFoo((int)strlen(name))._microcom_detach(), true);
         return S_OK;
     }
     ComPtr<IFoo> GetFooAndHost(ComPtr<IHost>& host) override
     {
-        host._microcom_attach(new HostImpl());
+        host._microcom_attach(new HostImpl(), true);
         return NewFoo(7);
     }
-    void FillFoo(ComPtr<IFoo>& ppv) override { ppv._microcom_attach(new FooImpl(8)); }
+    void FillFoo(ComPtr<IFoo>& ppv) override { ppv._microcom_attach(new FooImpl(8), true); }
     ComPtr<IUnknown> AsUnknown() override
     {
         ComPtr<IUnknown> rv;
         AddRef();
-        rv._microcom_attach(static_cast<ComObject*>(this));
+        rv._microcom_attach(static_cast<ComObject*>(this), true);
         return rv;
     }
-    HRESULT SetFoo(IFoo* foo) override { return foo->GetValue(); }
+    HRESULT SetFoo(const ComPtr<IFoo>& foo) override { return foo->GetValue(); }
     HRESULT GetCount(int* count) override
     {
         *count = 9;
@@ -349,10 +361,70 @@ static void TestWrappers()
         CHECK(created->GetValue() == 8);
         auto u = host->AsUnknown();
         CHECK(u.get() != nullptr);
-        CHECK(host->SetFoo(f.get()) == 11u);
+        CHECK(host->SetFoo(f) == 11u);
     }
     CHECK(g_live == 1);
     host->Release();
+}
+
+// Call preamble, self and argument retention
+
+class ValueImpl : public ComObject, public MicroComImpl<IValue>
+{
+public:
+    FORWARD_IUNKNOWN()
+    int Get() override { return 21; }
+};
+
+static IValue* g_valueToDrop = nullptr;
+
+class CallTargetImpl : public ComObject, public MicroComImpl<ICallTarget>
+{
+    int _number = 5;
+public:
+    FORWARD_IUNKNOWN()
+    int GetNumber() override { return _number; }
+
+    // Simulates a C# callback dropping the last external reference while the call is in progress
+    HRESULT Close() override
+    {
+        g_inCall = true;
+        Release();
+        g_inCall = false;
+        return _number == 5 ? S_OK : E_NOINTERFACE;
+    }
+
+    int Consume(const ComPtr<IValue>& value, int extra) override
+    {
+        g_inCall = true;
+        g_valueToDrop->Release();
+        g_inCall = false;
+        return value->Get() + extra;
+    }
+};
+
+static void TestRetention()
+{
+    auto target = Make<ICallTarget, CallTargetImpl>();
+    if (!CheckSlotsNotNull("ICallTarget", target, 6))
+        return;
+
+    CHECK(Slot<int>(target, 3) == 5);
+    CHECK(g_preambleCalls == 1);
+    CHECK(target->GetNumber() == 5);
+    CHECK(g_preambleCalls == 2);
+
+    auto value = Make<IValue, ValueImpl>();
+    g_valueToDrop = value;
+    CHECK(Slot<int>(target, 5, value, 1) == 22);
+    CHECK(g_destroyedInCall == 0);
+    CHECK(g_live == 1);
+
+    CHECK(Slot<HRESULT>(target, 4) == S_OK);
+    CHECK(g_destroyedInCall == 0);
+    CHECK(g_live == 0);
+    // GetNumber twice, Consume, IValue::Get inside Consume, Close
+    CHECK(g_preambleCalls == 5);
 }
 
 int main()
@@ -361,6 +433,7 @@ int main()
     TestVirtualChain();
     TestNonVirtual();
     TestWrappers();
+    TestRetention();
     if (g_failures == 0)
         CHECK(g_live == 0);
     if (g_failures == 0)

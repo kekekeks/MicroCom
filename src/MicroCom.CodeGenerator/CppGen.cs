@@ -57,16 +57,24 @@ template<class T> struct MicroComImplBase
             {
                 _idl = idl;
                 _smartPointer = string.IsNullOrWhiteSpace(smartPointer) ? "ComPtr" : smartPointer;
+                CallPreamble = idl.GetAttributeOrDefault("cpp-call-preamble");
             }
+
+            public string CallPreamble { get; }
 
             bool IsInterface(AstTypeNode type) => !type.IsLink && type.GenericArguments.Count == 0
                 && (type.Name == "IUnknown" || _idl.Interfaces.Any(i => i.Name == type.Name));
 
             public bool IsWrappedReturn(AstTypeNode type) => type.PointerLevel == 1 && IsInterface(type);
 
-            public bool IsWrappedArg(AstInterfaceMemberArgumentNode arg) => arg.Type.PointerLevel == 2 && IsInterface(arg.Type);
+            public bool IsOutArg(AstInterfaceMemberArgumentNode arg) => arg.Type.PointerLevel == 2 && IsInterface(arg.Type);
 
-            public bool IsWrapped(AstInterfaceMemberNode member) => IsWrappedReturn(member.ReturnType) || member.Any(IsWrappedArg);
+            public bool IsInArg(AstInterfaceMemberArgumentNode arg) => arg.Type.PointerLevel == 1 && IsInterface(arg.Type);
+
+            public bool IsWrappedArg(AstInterfaceMemberArgumentNode arg) => IsOutArg(arg) || IsInArg(arg);
+
+            public bool IsWrapped(AstInterfaceMemberNode member) =>
+                CallPreamble != null || IsWrappedReturn(member.ReturnType) || member.Any(IsWrappedArg);
 
             public string SmartType(string interfaceName) => _smartPointer + "<" + interfaceName + ">";
 
@@ -74,8 +82,9 @@ template<class T> struct MicroComImplBase
                 ? SmartType(member.ReturnType.Name)
                 : ConvertType(member.ReturnType);
 
-            public string WrapperArgType(AstInterfaceMemberArgumentNode arg) => IsWrappedArg(arg)
-                ? SmartType(arg.Type.Name) + "&"
+            public string WrapperArgType(AstInterfaceMemberArgumentNode arg) =>
+                IsOutArg(arg) ? SmartType(arg.Type.Name) + "&"
+                : IsInArg(arg) ? "const " + SmartType(arg.Type.Name) + "&"
                 : ConvertArgType(arg);
         }
 
@@ -123,13 +132,15 @@ template<class T> struct MicroComImplBase
             {
                 AppendSignature(sb, "", "inline ", ctx.WrapperReturnType(m), i.Name + "::" + m.Name, m,
                     ctx.WrapperArgType, false, "");
-                var call = ImplPrefix + m.Name + "(" + string.Join(", ",
-                    m.Select(a => ctx.IsWrappedArg(a) ? a.Name + "._microcom_out()" : a.Name)) + ")";
+                var call = ImplPrefix + m.Name + "(" + string.Join(", ", m.Select(a =>
+                    ctx.IsOutArg(a) ? a.Name + "._microcom_out()"
+                    : ctx.IsInArg(a) ? a.Name + "._microcom_get()"
+                    : a.Name)) + ")";
                 sb.AppendLine("{");
                 if (ctx.IsWrappedReturn(m.ReturnType))
                 {
                     sb.Append("    ").Append(ctx.SmartType(m.ReturnType.Name)).AppendLine(" __microcom_rv;");
-                    sb.Append("    __microcom_rv._microcom_attach(").Append(call).AppendLine(");");
+                    sb.Append("    __microcom_rv._microcom_attach(").Append(call).AppendLine(", true);");
                     sb.AppendLine("    return __microcom_rv;");
                 }
                 else if (IsVoid(m.ReturnType))
@@ -186,17 +197,31 @@ template<class T> struct MicroComImplBase
                 }
 
                 foreach (var m in members)
-                    AppendThunk(sb, m, ctx);
+                    AppendThunk(sb, i.Name, m, ctx);
                 sb.AppendLine("};");
             }
         }
 
-        static void AppendThunk(StringBuilder sb, AstInterfaceMemberNode m, SmartPointerContext ctx)
+        static void AppendThunk(StringBuilder sb, string interfaceName, AstInterfaceMemberNode m, SmartPointerContext ctx)
         {
             AppendSignature(sb, "    ", "", ConvertType(m.ReturnType), ImplPrefix + m.Name, m, ConvertArgType, false,
                 " final");
             sb.AppendLine("    {");
-            var outs = m.Where(ctx.IsWrappedArg).ToList();
+            if (ctx.CallPreamble != null)
+                AppendIndentedLines(sb, ctx.CallPreamble, "        ");
+
+            // Keeps this object and the arguments alive even if the callee drops the last external reference
+            sb.Append("        ").Append(ctx.SmartType(interfaceName)).AppendLine(" __microcom_self;");
+            sb.Append("        __microcom_self._microcom_attach(static_cast<").Append(interfaceName)
+                .AppendLine("*>(this), false);");
+            foreach (var a in m.Where(ctx.IsInArg))
+            {
+                sb.Append("        ").Append(ctx.SmartType(a.Type.Name)).Append(" __microcom_").Append(a.Name).AppendLine(";");
+                sb.Append("        __microcom_").Append(a.Name).Append("._microcom_attach(").Append(a.Name)
+                    .AppendLine(", false);");
+            }
+
+            var outs = m.Where(ctx.IsOutArg).ToList();
             foreach (var o in outs)
                 sb.Append("        ").Append(ctx.SmartType(o.Type.Name)).Append(" __microcom_").Append(o.Name).AppendLine(";");
 
@@ -219,6 +244,15 @@ template<class T> struct MicroComImplBase
             }
 
             sb.AppendLine("    }");
+        }
+
+        static void AppendIndentedLines(StringBuilder sb, string text, string indent)
+        {
+            foreach (var line in text.Replace("\r\n", "\n").Split('\n'))
+            {
+                if (line.Trim().Length != 0)
+                    sb.Append(indent).AppendLine(line.Trim());
+            }
         }
 
         public static string GenerateCpp(AstIdlNode idl, CppGenOptions options = null)

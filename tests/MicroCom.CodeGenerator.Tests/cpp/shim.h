@@ -35,16 +35,20 @@ public:
     T* operator->() const { return _obj; }
     T* get() const { return _obj; }
 
-    void _microcom_attach(T* owned)
+    void _microcom_attach(T* obj, bool owns)
     {
+        if (obj && !owns)
+            obj->AddRef();
         if (_obj)
             _obj->Release();
-        _obj = owned;
+        _obj = obj;
     }
+
+    T* _microcom_get() const { return _obj; }
 
     T** _microcom_out()
     {
-        _microcom_attach(nullptr);
+        _microcom_attach(nullptr, true);
         return &_obj;
     }
 

@@ -66,7 +66,7 @@ namespace MicroCom.CodeGenerator.Tests
                 var headers = new[]
                 {
                     "Virtual_Inherits_Chains_Adapters", "Non_Virtual_Inherits_Flattens_Adapters",
-                    "Wraps_Returns_And_Out_Params"
+                    "Wraps_Returns_And_Out_Params", "Call_Preamble_And_Retention"
                 };
                 foreach (var name in headers)
                 {
@@ -80,7 +80,12 @@ namespace MicroCom.CodeGenerator.Tests
 
                 // Generated headers alone must be warning-free
                 var headersOnly = Path.Combine(tempDir, "headers.cpp");
-                File.WriteAllLines(headersOnly, new[] { "#include \"shim.h\"" }
+                File.WriteAllLines(headersOnly, new[]
+                    {
+                        "#include \"shim.h\"",
+                        "#define CALL_PREAMBLE (void)0",
+                        "#define CALL_PREAMBLE_SECOND_LINE (void)0"
+                    }
                     .Concat(headers.Select(h => "#include \"" + h + ".h\"")));
                 var (headersExit, headersOutput) = Run(compiler, "-std=c++17", "-Wall", "-Wextra", "-Werror",
                     "-fsyntax-only", "-I", tempDir, "-I", cppDir, headersOnly);

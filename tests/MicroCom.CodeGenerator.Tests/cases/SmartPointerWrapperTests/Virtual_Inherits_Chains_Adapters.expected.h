@@ -48,7 +48,7 @@ inline HRESULT IAvnTopLevel::GetName (
 inline ComPtr<IAvnString> IAvnWindowBase::GetText ()
 {
     ComPtr<IAvnString> __microcom_rv;
-    __microcom_rv._microcom_attach(impl_GetText());
+    __microcom_rv._microcom_attach(impl_GetText(), true);
     return __microcom_rv;
 }
 template<>
@@ -65,6 +65,8 @@ struct MicroComImpl<IAvnTopLevel> : public MicroComImplBase<IAvnTopLevel>, publi
         IAvnString** ppv
     ) final
     {
+        ComPtr<IAvnTopLevel> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IAvnTopLevel*>(this), false);
         ComPtr<IAvnString> __microcom_ppv;
         auto __microcom_r = GetName(__microcom_ppv);
         if (ppv) *ppv = __microcom_ppv._microcom_detach();
@@ -77,6 +79,8 @@ struct MicroComImpl<IAvnWindowBase> : public MicroComImplBase<IAvnWindowBase>, p
     virtual ComPtr<IAvnString> GetText () = 0;
     IAvnString* impl_GetText () final
     {
+        ComPtr<IAvnWindowBase> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IAvnWindowBase*>(this), false);
         return GetText()._microcom_detach();
     }
 };

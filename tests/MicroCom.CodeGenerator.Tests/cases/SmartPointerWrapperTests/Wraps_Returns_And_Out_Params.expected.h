@@ -51,9 +51,12 @@ COMINTERFACE(IHost, 0b5a6a43, 6d3e, 4f3c, 9d, 3a, 7a, 2b, 0e, 0c, 1f, 02) : IUnk
     );
     virtual IUnknown* impl_AsUnknown () = 0;
     ComPtr<IUnknown> AsUnknown ();
-    virtual HRESULT SetFoo (
+    virtual HRESULT impl_SetFoo (
         IFoo* foo
     ) = 0;
+    HRESULT SetFoo (
+        const ComPtr<IFoo>& foo
+    );
     virtual HRESULT GetCount (
         int* count
     ) = 0;
@@ -63,7 +66,7 @@ inline ComPtr<IFoo> IHost::GetFoo (
 )
 {
     ComPtr<IFoo> __microcom_rv;
-    __microcom_rv._microcom_attach(impl_GetFoo(index));
+    __microcom_rv._microcom_attach(impl_GetFoo(index), true);
     return __microcom_rv;
 }
 inline HRESULT IHost::CreateFoo (
@@ -78,7 +81,7 @@ inline ComPtr<IFoo> IHost::GetFooAndHost (
 )
 {
     ComPtr<IFoo> __microcom_rv;
-    __microcom_rv._microcom_attach(impl_GetFooAndHost(host._microcom_out()));
+    __microcom_rv._microcom_attach(impl_GetFooAndHost(host._microcom_out()), true);
     return __microcom_rv;
 }
 inline void IHost::FillFoo (
@@ -90,8 +93,14 @@ inline void IHost::FillFoo (
 inline ComPtr<IUnknown> IHost::AsUnknown ()
 {
     ComPtr<IUnknown> __microcom_rv;
-    __microcom_rv._microcom_attach(impl_AsUnknown());
+    __microcom_rv._microcom_attach(impl_AsUnknown(), true);
     return __microcom_rv;
+}
+inline HRESULT IHost::SetFoo (
+    const ComPtr<IFoo>& foo
+)
+{
+    return impl_SetFoo(foo._microcom_get());
 }
 template<>
 struct MicroComImpl<IFoo> : public MicroComImplBase<IFoo>, public IFoo
@@ -118,10 +127,15 @@ struct MicroComImpl<IHost> : public MicroComImplBase<IHost>, public IHost
         ComPtr<IFoo>& ppv
     ) = 0;
     virtual ComPtr<IUnknown> AsUnknown () = 0;
+    virtual HRESULT SetFoo (
+        const ComPtr<IFoo>& foo
+    ) = 0;
     IFoo* impl_GetFoo (
         int index
     ) final
     {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
         return GetFoo(index)._microcom_detach();
     }
     HRESULT impl_CreateFoo (
@@ -129,6 +143,8 @@ struct MicroComImpl<IHost> : public MicroComImplBase<IHost>, public IHost
         IFoo** ppv
     ) final
     {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
         ComPtr<IFoo> __microcom_ppv;
         auto __microcom_r = CreateFoo(name, __microcom_ppv);
         if (ppv) *ppv = __microcom_ppv._microcom_detach();
@@ -138,6 +154,8 @@ struct MicroComImpl<IHost> : public MicroComImplBase<IHost>, public IHost
         IHost** host
     ) final
     {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
         ComPtr<IHost> __microcom_host;
         auto __microcom_r = GetFooAndHost(__microcom_host)._microcom_detach();
         if (host) *host = __microcom_host._microcom_detach();
@@ -147,12 +165,26 @@ struct MicroComImpl<IHost> : public MicroComImplBase<IHost>, public IHost
         IFoo** ppv
     ) final
     {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
         ComPtr<IFoo> __microcom_ppv;
         FillFoo(__microcom_ppv);
         if (ppv) *ppv = __microcom_ppv._microcom_detach();
     }
     IUnknown* impl_AsUnknown () final
     {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
         return AsUnknown()._microcom_detach();
+    }
+    HRESULT impl_SetFoo (
+        IFoo* foo
+    ) final
+    {
+        ComPtr<IHost> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IHost*>(this), false);
+        ComPtr<IFoo> __microcom_foo;
+        __microcom_foo._microcom_attach(foo, false);
+        return SetFoo(__microcom_foo);
     }
 };

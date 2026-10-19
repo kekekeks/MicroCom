@@ -1,0 +1,20 @@
+@clr-namespace Test
+@clr-access internal
+@cpp-call-preamble @@
+CALL_PREAMBLE;
+CALL_PREAMBLE_SECOND_LINE;
+@@
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f51)]
+interface IValue
+{
+    int Get();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f52)]
+interface ICallTarget
+{
+    int GetNumber();
+    HRESULT Close();
+    int Consume(IValue* value, int extra);
+}

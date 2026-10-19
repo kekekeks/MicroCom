@@ -33,6 +33,12 @@ namespace MicroCom.CodeGenerator.Tests
         }
 
         [Fact]
+        public void Call_Preamble_And_Retention()
+        {
+            RunAndAssertGenerator(cppOptions: Options);
+        }
+
+        [Fact]
         public void Unknown_Base_Fails()
         {
             var parsed = MicroComCodeGenerator.Parse(@"@clr-namespace Test

@@ -34,7 +34,7 @@ COMINTERFACE(IBitmap, 0b5a6a43, 6d3e, 4f3c, 9d, 3a, 7a, 2b, 0e, 0c, 1f, 33) : II
 inline ComPtr<IImage> IImage::Clone ()
 {
     ComPtr<IImage> __microcom_rv;
-    __microcom_rv._microcom_attach(impl_Clone());
+    __microcom_rv._microcom_attach(impl_Clone(), true);
     return __microcom_rv;
 }
 inline HRESULT IBitmap::Lock (
@@ -53,6 +53,8 @@ struct MicroComImpl<IImage> : public MicroComImplBase<IImage>, public IImage
     virtual ComPtr<IImage> Clone () = 0;
     IImage* impl_Clone () final
     {
+        ComPtr<IImage> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IImage*>(this), false);
         return Clone()._microcom_detach();
     }
 };
@@ -67,6 +69,8 @@ struct MicroComImpl<IBitmap> : public MicroComImplBase<IBitmap>, public IBitmap
         ILock** ppv
     ) final
     {
+        ComPtr<IBitmap> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IBitmap*>(this), false);
         ComPtr<ILock> __microcom_ppv;
         auto __microcom_r = Lock(__microcom_ppv);
         if (ppv) *ppv = __microcom_ppv._microcom_detach();
@@ -74,6 +78,8 @@ struct MicroComImpl<IBitmap> : public MicroComImplBase<IBitmap>, public IBitmap
     }
     IImage* impl_Clone () final
     {
+        ComPtr<IBitmap> __microcom_self;
+        __microcom_self._microcom_attach(static_cast<IBitmap*>(this), false);
         return Clone()._microcom_detach();
     }
 };
