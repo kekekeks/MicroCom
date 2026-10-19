@@ -19,6 +19,23 @@ namespace MicroCom.CodeGenerator.MSBuild
 
         public bool Execute()
         {
+            // Outputs get the latest input timestamp, so the incremental build sees them as up to date
+            DateTime GetTimestamp(ITaskItem idlItem)
+            {
+                var rv = File.GetLastWriteTime(idlItem.ItemSpec);
+                foreach (var additional in AdditionalInputs ?? Array.Empty<ITaskItem>())
+                {
+                    if (File.Exists(additional.ItemSpec))
+                    {
+                        var time = File.GetLastWriteTime(additional.ItemSpec);
+                        if (time > rv)
+                            rv = time;
+                    }
+                }
+
+                return rv;
+            }
+
             foreach (var i in Inputs)
             {
                 try
@@ -29,8 +46,13 @@ namespace MicroCom.CodeGenerator.MSBuild
                     if (!string.IsNullOrWhiteSpace(cppOutput))
                     {
                         Log("Writing CPP header to " + cppOutput);
-                        WriteOutput(cppOutput, idl.GenerateCppHeader());
-                        File.SetLastWriteTime(cppOutput, File.GetLastWriteTime(i.ItemSpec));
+                        bool.TryParse(i.GetMetadata("CppSmartPointerWrappers"), out var smartPointerWrappers);
+                        WriteOutput(cppOutput, idl.GenerateCppHeader(new CppGenOptions
+                        {
+                            SmartPointerWrappers = smartPointerWrappers,
+                            SmartPointerType = i.GetMetadata("CppSmartPointerType")
+                        }));
+                        File.SetLastWriteTime(cppOutput, GetTimestamp(i));
                     }
 
                     var interopPath = i.GetMetadata("CSharpInteropPath");
@@ -42,7 +64,7 @@ namespace MicroCom.CodeGenerator.MSBuild
                             RuntimeNamespace = RuntimeNamespace,
                         }.Generate();
                         WriteOutput(interopPath, output);
-                        File.SetLastWriteTime(interopPath, File.GetLastWriteTime(i.ItemSpec));
+                        File.SetLastWriteTime(interopPath, GetTimestamp(i));
                     }
                 }
                 catch (ParseException e)
@@ -50,6 +72,12 @@ namespace MicroCom.CodeGenerator.MSBuild
                     BuildEngine.LogErrorEvent(new BuildErrorEventArgs("MCOM", "0001", i.ItemSpec,
                         e.Line, e.Position, e.Line, e.Position,
                         e.Message, "", ""));
+                    return false;
+                }
+                catch (CodeGenException e)
+                {
+                    BuildEngine.LogErrorEvent(new BuildErrorEventArgs("MCOM", "0002", i.ItemSpec,
+                        0, 0, 0, 0, e.Message, "", ""));
                     return false;
                 }
             }
@@ -72,6 +100,8 @@ namespace MicroCom.CodeGenerator.MSBuild
 
         [Required]
         public string RuntimeNamespace { get; set; }
+
+        public ITaskItem[] AdditionalInputs { get; set; }
         public IBuildEngine BuildEngine { get; set; }
         public ITaskHost HostObject { get; set; }
     }

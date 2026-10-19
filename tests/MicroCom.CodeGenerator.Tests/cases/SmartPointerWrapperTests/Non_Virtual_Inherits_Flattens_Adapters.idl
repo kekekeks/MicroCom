@@ -1,0 +1,21 @@
+@clr-namespace Test
+@clr-access internal
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f31)]
+interface ILock
+{
+    void* GetAddress();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f32)]
+interface IImage
+{
+    HRESULT GetWidth(int* width);
+    IImage* Clone();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f33)]
+interface IBitmap : IImage
+{
+    HRESULT Lock(ILock** ppv);
+}

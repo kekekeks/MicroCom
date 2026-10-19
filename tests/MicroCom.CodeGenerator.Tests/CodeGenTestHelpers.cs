@@ -12,7 +12,7 @@ namespace MicroCom.CodeGenerator.Tests
             return Regex.Replace(input, "\\s+", " ").Trim();
         }
 
-        public static void AssertGeneratorOutput(string idl, string expectedCSharp, string expectedCpp = null)
+        public static void AssertGeneratorOutput(string idl, string expectedCSharp, string expectedCpp = null, CppGenOptions cppOptions = null)
         {
             var parsed = MicroComCodeGenerator.Parse(idl);
             var generatedCSharp = parsed.GenerateCSharpInterop();
@@ -22,7 +22,7 @@ namespace MicroCom.CodeGenerator.Tests
 
             if (expectedCpp != null)
             {
-                var generatedCpp = parsed.GenerateCppHeader();
+                var generatedCpp = parsed.GenerateCppHeader(cppOptions);
                 var normalizedGeneratedCpp = NormalizeWhitespace(generatedCpp);
                 var normalizedExpectedCpp = NormalizeWhitespace(expectedCpp);
                 Assert.Equal(normalizedExpectedCpp, normalizedGeneratedCpp);

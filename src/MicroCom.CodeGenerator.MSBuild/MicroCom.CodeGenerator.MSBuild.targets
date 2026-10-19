@@ -12,7 +12,7 @@
       <CustomAdditionalGenerateMicroComItemsInputs Include="$(MicroComGeneratorMSBuildDll)"/>
     </ItemGroup>
 
-    <Hash ItemsToHash="@(MicroComIdl);@(CustomAdditionalGenerateMicroComItemsInputs);$(MSBuildAllProjects)">
+    <Hash ItemsToHash="@(MicroComIdl->'%(Identity)|%(CppHeaderPath)|%(CSharpInteropPath)|%(CppSmartPointerWrappers)|%(CppSmartPointerType)');@(CustomAdditionalGenerateMicroComItemsInputs);$(MSBuildAllProjects)">
       <Output TaskParameter="HashResult" PropertyName="GenerateMicroComItemsDependencyHash" />
     </Hash>
 
@@ -28,11 +28,12 @@
   
   <Target Name="GenerateMicroComItems"
           DependsOnTargets="ResolveReferences;_GenerateMicroComItemsDependencyCache"
-          Inputs="@(MicroComIdl);"
+          Inputs="@(MicroComIdl);@(CustomAdditionalGenerateMicroComItemsInputs)"
           Outputs="%(MicroComIdl.CSharpInteropPath);%(MicroComIdl.CppHeaderPath)">
     <MicroComCodeGeneratorTask
             RuntimeNamespace="$(MicroComGeneratorRuntimeNamespace)"
-            Inputs="@(MicroComIdl)"/>
+            Inputs="@(MicroComIdl)"
+            AdditionalInputs="@(CustomAdditionalGenerateMicroComItemsInputs)"/>
   </Target>
   
   <Target Name="UpdateMicroComCompileItems" DependsOnTargets="GenerateMicroComItems" BeforeTargets="CoreCompile">

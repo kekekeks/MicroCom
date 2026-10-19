@@ -16,6 +16,12 @@ namespace MicroCom.CodeGenerator.Cli
             [Option("cs", Required = false, HelpText = "C# output file")]
             public string CSharpOutput { get; set; }
 
+            [Option("cpp-smart-pointer-wrappers", Required = false, HelpText = "Generate smart pointer wrappers and MicroComImpl adapters in C++ header")]
+            public bool CppSmartPointerWrappers { get; set; }
+
+            [Option("cpp-smart-pointer-type", Required = false, HelpText = "Smart pointer template used by C++ wrappers (default: ComPtr)")]
+            public string CppSmartPointerType { get; set; }
+
         }
         
         static int Main(string[] args)
@@ -32,7 +38,11 @@ namespace MicroCom.CodeGenerator.Cli
             var ast = MicroComCodeGenerator.Parse(text);
 
             if (opts.CppOutput != null)
-                File.WriteAllText(opts.CppOutput, ast.GenerateCppHeader());
+                File.WriteAllText(opts.CppOutput, ast.GenerateCppHeader(new CppGenOptions
+                {
+                    SmartPointerWrappers = opts.CppSmartPointerWrappers,
+                    SmartPointerType = opts.CppSmartPointerType
+                }));
             
             if (opts.CSharpOutput != null)
             {

@@ -1,0 +1,22 @@
+@clr-namespace Test
+@clr-access internal
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f01)]
+interface IFoo
+{
+    int GetValue();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f02)]
+interface IHost
+{
+    /// <summary>Returns a foo by index</summary>
+    /// <param name="index">Foo index</param>
+    IFoo* GetFoo(int index);
+    HRESULT CreateFoo([const] char* name, IFoo** ppv);
+    IFoo* GetFooAndHost(IHost** host);
+    void FillFoo(IFoo** ppv);
+    IUnknown* AsUnknown();
+    HRESULT SetFoo(IFoo* foo);
+    HRESULT GetCount(int* count);
+}

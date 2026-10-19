@@ -19,7 +19,7 @@ namespace MicroCom.CodeGenerator.Tests
             return dir.FullName;
         }
 
-        protected void RunAndAssertGenerator(bool expectParseError = false, string testClass = null, string testName = null, [CallerMemberName] string callerMemberName = null)
+        protected void RunAndAssertGenerator(bool expectParseError = false, string testClass = null, string testName = null, CppGenOptions cppOptions = null, [CallerMemberName] string callerMemberName = null)
         {
             testClass ??= this.GetType().Name;
             testName ??= callerMemberName;
@@ -42,7 +42,7 @@ namespace MicroCom.CodeGenerator.Tests
                 if (expectParseError)
                     throw new Exception("Expected parse error, but parsing succeeded.");
                 var generatedCs = parsed.GenerateCSharpInterop();
-                var generatedH = parsed.GenerateCppHeader();
+                var generatedH = parsed.GenerateCppHeader(cppOptions);
 
                 File.WriteAllText(outCsPath, generatedCs);
                 File.WriteAllText(outHPath, generatedH);
@@ -51,7 +51,7 @@ namespace MicroCom.CodeGenerator.Tests
                 var expectedH = File.Exists(expectedHPath) ? File.ReadAllText(expectedHPath) : null;
 
 
-                CodeGenTestHelpers.AssertGeneratorOutput(idl, expectedCs, expectedH);
+                CodeGenTestHelpers.AssertGeneratorOutput(idl, expectedCs, expectedH, cppOptions);
             }
         }
     }

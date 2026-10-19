@@ -1,0 +1,28 @@
+@clr-namespace Test
+@clr-access internal
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f21)]
+interface IAvnString
+{
+    int Length();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f22)]
+interface IAvnTopLevel
+{
+    HRESULT SetTitle(int value);
+    HRESULT GetName(IAvnString** ppv);
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f23), cpp-virtual-inherits]
+interface IAvnWindowBase : IAvnTopLevel
+{
+    HRESULT Show();
+    IAvnString* GetText();
+}
+
+[uuid(0b5a6a43-6d3e-4f3c-9d3a-7a2b0e0c1f24), cpp-virtual-inherits]
+interface IAvnWindow : IAvnWindowBase
+{
+    HRESULT SetEnabled(int enabled);
+}
